@@ -149,11 +149,13 @@ export default function StockForm({ initialData, mode }: Props) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [autoFillStatus, setAutoFillStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(stockSchema),
@@ -192,6 +194,78 @@ export default function StockForm({ initialData, mode }: Props) {
     const result = calculateValuation(partial as Stock);
     setPreview(result);
   }, [watchedData]);
+
+  async function handleAutoFill(symbol: string) {
+    if (!symbol.trim() || mode === 'edit') return;
+    const upper = symbol.toUpperCase().trim();
+    setAutoFillStatus('loading');
+    try {
+      const [finRes, priceRes] = await Promise.all([
+        fetch(`/api/financials/${upper}`),
+        fetch(`/api/price/${upper}`),
+      ]);
+      const fin = finRes.ok ? await finRes.json() : null;
+      const priceData = priceRes.ok ? await priceRes.json() : null;
+
+      if (!fin) throw new Error('not found');
+
+      const { profile, metrics, annuals } = fin;
+
+      if (profile?.name) setValue('name', profile.name);
+
+      if (metrics) {
+        if (metrics.roe != null) setValue('roe', metrics.roe > 0.15 ? 'YES' : 'NO');
+        if (metrics.netMargin != null)
+          setValue('net_margin',
+            metrics.netMargin > 0.20 ? 'ABOVE_20' :
+            metrics.netMargin > 0.10 ? 'ABOVE_10' : 'NO'
+          );
+        if (metrics.dividendYield != null)
+          setValue('has_dividends', metrics.dividendYield > 0 ? 'YES' : 'NO');
+        if (metrics.eps != null && metrics.eps > 0)
+          setValue('eps_value', String(metrics.eps));
+        if (metrics.bookValue != null && metrics.bookValue > 0)
+          setValue('bvps', String(metrics.bookValue));
+        if (metrics.dividendYield != null && priceData?.price) {
+          const annualDiv = (priceData.price * metrics.dividendYield).toFixed(2);
+          if (parseFloat(annualDiv) > 0) setValue('expected_dividend', annualDiv);
+        }
+      }
+
+      if (Array.isArray(annuals) && annuals.length >= 1) {
+        const latest = annuals[0];
+        if (latest.freeCashFlow != null)
+          setValue('fcf', latest.freeCashFlow > 0 ? 'YES' : 'NO');
+        if (annuals.length >= 2 && annuals[0].eps != null && annuals[1].eps != null)
+          setValue('eps', annuals[0].eps > annuals[1].eps ? 'YES' : 'NO');
+      }
+
+      // AI evaluation for subjective FACTS fields
+      if (fin) {
+        try {
+          const aiRes = await fetch('/api/ai-evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profile: fin.profile, metrics: fin.metrics, annuals: fin.annuals }),
+          });
+          if (aiRes.ok) {
+            const ai = await aiRes.json();
+            if (ai.moat) setValue('moat', ai.moat);
+            if (ai.int_cov) setValue('int_cov', ai.int_cov);
+            if (ai.policy) setValue('policy', ai.policy);
+            if (ai.tech_risk) setValue('tech_risk', ai.tech_risk);
+            if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk);
+          }
+        } catch {
+          // AI evaluation is best-effort, ignore errors
+        }
+      }
+
+      setAutoFillStatus('success');
+    } catch {
+      setAutoFillStatus('error');
+    }
+  }
 
   async function onSubmit(data: FormData) {
     setError('');
@@ -294,9 +368,19 @@ export default function StockForm({ initialData, mode }: Props) {
                   {...register('symbol')}
                   placeholder="e.g. AAPL"
                   disabled={mode === 'edit'}
+                  onBlur={(e) => handleAutoFill(e.target.value)}
                   className={`${inputClass} uppercase disabled:bg-gray-50`}
                 />
                 {errors.symbol && <p className="text-red-500 text-xs mt-1">{errors.symbol.message}</p>}
+                {autoFillStatus === 'loading' && (
+                  <p className="text-blue-500 text-xs mt-1">⏳ 正在載入股票資料…</p>
+                )}
+                {autoFillStatus === 'success' && (
+                  <p className="text-green-600 text-xs mt-1">✓ 已自動填入股票資料</p>
+                )}
+                {autoFillStatus === 'error' && (
+                  <p className="text-orange-500 text-xs mt-1">⚠ 找不到股票資料，請手動填寫</p>
+                )}
               </div>
 
               <div className="col-span-2 sm:col-span-1">
