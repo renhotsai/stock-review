@@ -235,15 +235,8 @@ export default function StockForm({ initialData, mode }: Props) {
       // Auto-set today's date
       setValue('added_date', new Date().toISOString().split('T')[0]);
 
+      // Fill valuation inputs from Yahoo Finance metrics
       if (metrics) {
-        if (metrics.roe != null) setValue('roe', metrics.roe > 0.15 ? 'YES' : 'NO');
-        if (metrics.netMargin != null)
-          setValue('net_margin',
-            metrics.netMargin > 0.20 ? 'ABOVE_20' :
-            metrics.netMargin > 0.10 ? 'ABOVE_10' : 'NO'
-          );
-        if (metrics.dividendYield != null)
-          setValue('has_dividends', metrics.dividendYield > 0 ? 'YES' : 'NO');
         if (metrics.eps != null && metrics.eps > 0)
           setValue('eps_value', String(metrics.eps));
         if (metrics.bookValue != null && metrics.bookValue > 0)
@@ -252,14 +245,6 @@ export default function StockForm({ initialData, mode }: Props) {
           const annualDiv = (priceData.price * metrics.dividendYield).toFixed(2);
           if (parseFloat(annualDiv) > 0) setValue('expected_dividend', annualDiv);
         }
-      }
-
-      if (Array.isArray(annuals) && annuals.length >= 1) {
-        const latest = annuals[0];
-        if (latest.freeCashFlow != null)
-          setValue('fcf', latest.freeCashFlow > 0 ? 'YES' : 'NO');
-        if (annuals.length >= 2 && annuals[0].eps != null && annuals[1].eps != null)
-          setValue('eps', annuals[0].eps > annuals[1].eps ? 'YES' : 'NO');
       }
 
       // Phase 1: AI evaluation
@@ -275,8 +260,13 @@ export default function StockForm({ initialData, mode }: Props) {
           const ai = await aiRes.json();
           if (ai.type && ['Growth', 'Dividends', 'Asset'].includes(ai.type))
             setValue('type', ai.type);
-          if (ai.moat) setValue('moat', ai.moat);
+          if (ai.eps) setValue('eps', ai.eps);
+          if (ai.fcf) setValue('fcf', ai.fcf);
+          if (ai.roe) setValue('roe', ai.roe);
           if (ai.int_cov) setValue('int_cov', ai.int_cov);
+          if (ai.moat) setValue('moat', ai.moat);
+          if (ai.net_margin) setValue('net_margin', ai.net_margin);
+          if (ai.has_dividends) setValue('has_dividends', ai.has_dividends);
           if (ai.policy) setValue('policy', ai.policy);
           if (ai.tech_risk) setValue('tech_risk', ai.tech_risk);
           if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk);
