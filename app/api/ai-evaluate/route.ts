@@ -34,6 +34,7 @@ ${(annuals ?? []).slice(0, 3).map((a: { year: number; revenue: number | null; ne
 Evaluate the following criteria and respond ONLY with a JSON object (no markdown, no explanation):
 
 {
+  "type": "Growth" | "Dividends" | "Asset",
   "moat": "TWO_MOATS" | "ONE_MOAT" | "NO",
   "int_cov": "ABOVE_10" | "ABOVE_4" | "NO_DEBT" | "NO",
   "policy": "YES" | "NO",
@@ -42,6 +43,7 @@ Evaluate the following criteria and respond ONLY with a JSON object (no markdown
 }
 
 Criteria definitions:
+- type: Investment classification. "Dividends" = mature company, consistent dividend payer (yield > 1.5%), stable cash flows. "Asset" = bank, insurance, real estate, capital-heavy industries where book value is the primary metric. "Growth" = high revenue/earnings growth, reinvests earnings, low/no dividends, tech/innovation sector.
 - moat: Economic moat (competitive advantage). TWO_MOATS = strong moat (brand + cost/network/switching), ONE_MOAT = one clear advantage, NO = no clear moat
 - int_cov: Interest coverage (operating income / interest expense). ABOVE_10 = very safe, ABOVE_4 = adequate, NO_DEBT = no debt, NO = insufficient
 - policy: Shareholder-friendly policy (consistent buybacks/dividends, reasonable executive pay). YES or NO
@@ -58,7 +60,7 @@ Criteria definitions:
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
-        max_tokens: 200,
+        max_tokens: 250,
       }),
     });
 

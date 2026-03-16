@@ -143,13 +143,22 @@ function stockToFormPreview(data: FormData): Partial<Stock> {
   } as Partial<Stock>;
 }
 
+// ── Processing phases ─────────────────────────────────────────
+const PHASES = [
+  { icon: '📡', text: '正在取得公司財務資料…' },
+  { icon: '🤖', text: 'AI 正在評估 F.A.C.T.S…' },
+  { icon: '✅', text: '資料已就緒，即將進入評估畫面' },
+];
+
 // ── Component ─────────────────────────────────────────────────
 export default function StockForm({ initialData, mode }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(mode === 'edit' ? 2 : 1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [autoFillStatus, setAutoFillStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [processing, setProcessing] = useState(false);
+  const [processingPhase, setProcessingPhase] = useState(0);
+  const [fetchError, setFetchError] = useState('');
 
   const {
     register,
@@ -195,23 +204,36 @@ export default function StockForm({ initialData, mode }: Props) {
     setPreview(result);
   }, [watchedData]);
 
-  async function handleAutoFill(symbol: string) {
-    if (!symbol.trim() || mode === 'edit') return;
-    const upper = symbol.toUpperCase().trim();
-    setAutoFillStatus('loading');
+  async function handleLookup() {
+    const symbol = watchedData.symbol.trim().toUpperCase();
+    if (!symbol) return;
+
+    setFetchError('');
+    setProcessing(true);
+    setProcessingPhase(0);
+
     try {
+      // Phase 0: fetch financials + price in parallel
       const [finRes, priceRes] = await Promise.all([
-        fetch(`/api/financials/${upper}`),
-        fetch(`/api/price/${upper}`),
+        fetch(`/api/financials/${symbol}`),
+        fetch(`/api/price/${symbol}`),
       ]);
       const fin = finRes.ok ? await finRes.json() : null;
       const priceData = priceRes.ok ? await priceRes.json() : null;
 
-      if (!fin) throw new Error('not found');
+      if (!fin) {
+        setFetchError('找不到此股票代號，請確認後再試');
+        setProcessing(false);
+        return;
+      }
 
+      // Fill Yahoo Finance data
       const { profile, metrics, annuals } = fin;
 
       if (profile?.name) setValue('name', profile.name);
+
+      // Auto-set today's date
+      setValue('added_date', new Date().toISOString().split('T')[0]);
 
       if (metrics) {
         if (metrics.roe != null) setValue('roe', metrics.roe > 0.15 ? 'YES' : 'NO');
@@ -240,30 +262,38 @@ export default function StockForm({ initialData, mode }: Props) {
           setValue('eps', annuals[0].eps > annuals[1].eps ? 'YES' : 'NO');
       }
 
-      // AI evaluation for subjective FACTS fields
-      if (fin) {
-        try {
-          const aiRes = await fetch('/api/ai-evaluate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profile: fin.profile, metrics: fin.metrics, annuals: fin.annuals }),
-          });
-          if (aiRes.ok) {
-            const ai = await aiRes.json();
-            if (ai.moat) setValue('moat', ai.moat);
-            if (ai.int_cov) setValue('int_cov', ai.int_cov);
-            if (ai.policy) setValue('policy', ai.policy);
-            if (ai.tech_risk) setValue('tech_risk', ai.tech_risk);
-            if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk);
-          }
-        } catch {
-          // AI evaluation is best-effort, ignore errors
+      // Phase 1: AI evaluation
+      setProcessingPhase(1);
+
+      try {
+        const aiRes = await fetch('/api/ai-evaluate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile, metrics, annuals }),
+        });
+        if (aiRes.ok) {
+          const ai = await aiRes.json();
+          if (ai.type && ['Growth', 'Dividends', 'Asset'].includes(ai.type))
+            setValue('type', ai.type);
+          if (ai.moat) setValue('moat', ai.moat);
+          if (ai.int_cov) setValue('int_cov', ai.int_cov);
+          if (ai.policy) setValue('policy', ai.policy);
+          if (ai.tech_risk) setValue('tech_risk', ai.tech_risk);
+          if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk);
         }
+      } catch {
+        // AI is best-effort, continue without it
       }
 
-      setAutoFillStatus('success');
+      // Phase 2: done
+      setProcessingPhase(2);
+      await new Promise((r) => setTimeout(r, 600));
+
+      setProcessing(false);
+      setStep(2);
     } catch {
-      setAutoFillStatus('error');
+      setFetchError('載入失敗，請稍後再試');
+      setProcessing(false);
     }
   }
 
@@ -293,7 +323,6 @@ export default function StockForm({ initialData, mode }: Props) {
       bvps: data.bvps ? parseFloat(data.bvps) : null,
       discount_factor: parseFloat(data.discount_factor) || 0.8,
       notes: data.notes,
-      // Calculate and store valuation
       entry_price: preview?.fairValue ?? null,
       review_price: preview?.reviewValue ?? null,
       score: preview?.score ?? 0,
@@ -330,103 +359,106 @@ export default function StockForm({ initialData, mode }: Props) {
 
   return (
     <div className="max-w-2xl">
-      {/* Step indicators */}
-      <div className="flex items-center gap-2 mb-6">
-        {[1, 2, 3].map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setStep(s)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              step === s
-                ? 'bg-blue-600 text-white'
-                : step > s
-                ? 'bg-green-100 text-green-700'
-                : 'bg-gray-100 text-gray-500'
-            }`}
-          >
-            {s === 1 ? '① 基本資訊' : s === 2 ? '② F.A.C.T.S' : '③ 估值輸入'}
-          </button>
-        ))}
-      </div>
+      {/* Step indicators — hidden on step 1 create mode */}
+      {(mode === 'edit' || step > 1) && (
+        <div className="flex items-center gap-2 mb-6">
+          {[2, 3].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStep(s)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                step === s
+                  ? 'bg-blue-600 text-white'
+                  : step > s
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-500'
+              }`}
+            >
+              {s === 2 ? '① F.A.C.T.S' : '② 估值輸入'}
+            </button>
+          ))}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         {error && (
           <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
         )}
 
-        {/* ── Step 1: Basic Info ─── */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">基本資訊</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  股票代碼 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  {...register('symbol')}
-                  placeholder="e.g. AAPL"
-                  disabled={mode === 'edit'}
-                  onBlur={(e) => handleAutoFill(e.target.value)}
-                  className={`${inputClass} uppercase disabled:bg-gray-50`}
-                />
-                {errors.symbol && <p className="text-red-500 text-xs mt-1">{errors.symbol.message}</p>}
-                {autoFillStatus === 'loading' && (
-                  <p className="text-blue-500 text-xs mt-1">⏳ 正在載入股票資料…</p>
-                )}
-                {autoFillStatus === 'success' && (
-                  <p className="text-green-600 text-xs mt-1">✓ 已自動填入股票資料</p>
-                )}
-                {autoFillStatus === 'error' && (
-                  <p className="text-orange-500 text-xs mt-1">⚠ 找不到股票資料，請手動填寫</p>
-                )}
+        {/* ── Step 1: Symbol Search (create mode only) ─── */}
+        {step === 1 && mode === 'create' && (
+          <div>
+            {!processing ? (
+              <div className="flex flex-col items-center py-8 gap-6">
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold text-gray-800">輸入股票代號</h2>
+                  <p className="text-sm text-gray-500 mt-1">系統將自動查詢所有資料</p>
+                </div>
+                <div className="w-full max-w-xs">
+                  <input
+                    {...register('symbol')}
+                    placeholder="e.g. AAPL, KO, MSFT"
+                    className={`${inputClass} text-center text-lg uppercase font-mono tracking-widest`}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLookup(); } }}
+                  />
+                  {errors.symbol && <p className="text-red-500 text-xs mt-1 text-center">{errors.symbol.message}</p>}
+                  {fetchError && <p className="text-red-500 text-xs mt-1 text-center">{fetchError}</p>}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLookup}
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  查詢股票 →
+                </button>
               </div>
-
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">股票類型</label>
-                <select {...register('type')} className={selectClass}>
-                  <option value="Growth">Growth</option>
-                  <option value="Dividends">Dividends</option>
-                  <option value="Asset">Asset</option>
-                </select>
+            ) : (
+              /* Processing screen */
+              <div className="flex flex-col items-center py-10 gap-6">
+                <div className="text-center">
+                  <p className="text-base font-semibold text-gray-700">
+                    {watchedData.symbol.toUpperCase()}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-0.5">正在分析股票資料</p>
+                </div>
+                <div className="w-full max-w-sm space-y-3">
+                  {PHASES.map((phase, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                        i < processingPhase
+                          ? 'bg-green-50 text-green-700'
+                          : i === processingPhase
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-gray-50 text-gray-400'
+                      }`}
+                    >
+                      <span className="text-lg">
+                        {i < processingPhase ? '✅' : i === processingPhase ? (
+                          <span className="inline-block animate-spin">⏳</span>
+                        ) : '○'}
+                      </span>
+                      <span className="text-sm font-medium">{phase.text}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">股票名稱</label>
-                <input
-                  {...register('name')}
-                  placeholder="e.g. Apple Inc."
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">加入日期</label>
-                <input
-                  {...register('added_date')}
-                  type="date"
-                  className={inputClass}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end mt-4">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-              >
-                下一步 →
-              </button>
-            </div>
+            )}
           </div>
         )}
 
         {/* ── Step 2: F.A.C.T.S ─── */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">F.A.C.T.S 評估標準</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-800">F.A.C.T.S 評估標準</h2>
+              {mode === 'create' && (
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                  {watchedData.name || watchedData.symbol} · {watchedData.type}
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {FACTS_FIELDS.map((field) => (
                 <div key={field.key}>
@@ -441,13 +473,17 @@ export default function StockForm({ initialData, mode }: Props) {
             </div>
 
             <div className="flex justify-between mt-4">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="px-6 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                ← 上一步
-              </button>
+              {mode === 'create' ? (
+                <button
+                  type="button"
+                  onClick={() => { setStep(1); setProcessing(false); }}
+                  className="px-6 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  ← 重新查詢
+                </button>
+              ) : (
+                <div />
+              )}
               <button
                 type="button"
                 onClick={() => setStep(3)}
@@ -462,7 +498,14 @@ export default function StockForm({ initialData, mode }: Props) {
         {/* ── Step 3: Valuation + Preview ─── */}
         {step === 3 && (
           <div className="space-y-4">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">估值輸入</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-800">估值輸入</h2>
+              {mode === 'create' && (
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                  {watchedData.name || watchedData.symbol} · {watchedData.type}
+                </span>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {selectedType === 'Growth' && (
