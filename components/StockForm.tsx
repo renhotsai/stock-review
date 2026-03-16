@@ -235,17 +235,6 @@ export default function StockForm({ initialData, mode }: Props) {
       // Auto-set today's date
       setValue('added_date', new Date().toISOString().split('T')[0]);
 
-      // Fill valuation inputs from Yahoo Finance metrics
-      if (metrics) {
-        if (metrics.eps != null && metrics.eps > 0)
-          setValue('eps_value', String(metrics.eps));
-        if (metrics.bookValue != null && metrics.bookValue > 0)
-          setValue('bvps', String(metrics.bookValue));
-        if (metrics.dividendYield != null && priceData?.price) {
-          const annualDiv = (priceData.price * metrics.dividendYield).toFixed(2);
-          if (parseFloat(annualDiv) > 0) setValue('expected_dividend', annualDiv);
-        }
-      }
 
       // Phase 1: AI evaluation
       setProcessingPhase(1);
@@ -254,7 +243,7 @@ export default function StockForm({ initialData, mode }: Props) {
         const aiRes = await fetch('/api/ai-evaluate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profile, metrics, annuals }),
+          body: JSON.stringify({ profile, metrics, annuals, price: priceData?.price ?? null }),
         });
         if (aiRes.ok) {
           const ai = await aiRes.json();
@@ -270,6 +259,11 @@ export default function StockForm({ initialData, mode }: Props) {
           if (ai.policy) setValue('policy', ai.policy);
           if (ai.tech_risk) setValue('tech_risk', ai.tech_risk);
           if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk);
+          // Valuation inputs from AI
+          if (ai.eps_value != null) setValue('eps_value', String(ai.eps_value));
+          if (ai.growth_rate != null) setValue('growth_rate', String(ai.growth_rate));
+          if (ai.expected_dividend != null) setValue('expected_dividend', String(ai.expected_dividend));
+          if (ai.bvps != null) setValue('bvps', String(ai.bvps));
         }
       } catch {
         // AI is best-effort, continue without it

@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { profile, metrics, annuals } = await request.json();
+    const { profile, metrics, annuals, price } = await request.json();
 
     const annualRows = (annuals ?? []).slice(0, 4).map((a: {
       year: number;
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
 Company: ${profile?.name ?? 'Unknown'} (${profile?.sector ?? ''} / ${profile?.industry ?? ''})
 
 Key Metrics:
+- Current Price: ${price != null ? '$' + price : 'N/A'}
 - ROE: ${metrics?.roe != null ? (metrics.roe * 100).toFixed(1) + '%' : 'N/A'}
 - Net Margin: ${metrics?.netMargin != null ? (metrics.netMargin * 100).toFixed(1) + '%' : 'N/A'}
 - Operating Margin: ${metrics?.operatingMargin != null ? (metrics.operatingMargin * 100).toFixed(1) + '%' : 'N/A'}
@@ -34,6 +35,7 @@ Key Metrics:
 - Debt/Equity: ${metrics?.debtToEquity ?? 'N/A'}
 - Current Ratio: ${metrics?.currentRatio ?? 'N/A'}
 - Dividend Yield: ${metrics?.dividendYield != null ? (metrics.dividendYield * 100).toFixed(2) + '%' : 'N/A'}
+- Annual Dividend/Share: ${metrics?.dividendYield != null && price != null ? '$' + (price * metrics.dividendYield).toFixed(2) : 'N/A'}
 - Payout Ratio: ${metrics?.payoutRatio != null ? (metrics.payoutRatio * 100).toFixed(1) + '%' : 'N/A'}
 - EPS (TTM): ${metrics?.eps ?? 'N/A'}
 - Book Value/Share: ${metrics?.bookValue ?? 'N/A'}
@@ -55,21 +57,31 @@ Respond ONLY with a valid JSON object (no markdown, no explanation):
   "has_dividends": "YES" | "NO",
   "policy": "YES" | "NO",
   "tech_risk": "LOW" | "MEDIUM" | "HIGH",
-  "mgmt_risk": "LOW" | "MEDIUM" | "HIGH"
+  "mgmt_risk": "LOW" | "MEDIUM" | "HIGH",
+  "eps_value": <number or null>,
+  "growth_rate": <number or null>,
+  "expected_dividend": <number or null>,
+  "bvps": <number or null>
 }
 
-Definitions:
+Definitions (FACTS fields):
 - type: "Dividends"=mature consistent dividend payer (yield>1.5%). "Asset"=bank/insurance/real estate/capital-heavy (book value is key metric). "Growth"=high growth, reinvests earnings, low/no dividends.
-- eps: "YES" if EPS has been growing consistently over the last 3+ years, "NO" otherwise.
-- fcf: "YES" if free cash flow is positive in the most recent year, "NO" if negative.
+- eps: "YES" if EPS growing consistently over last 3+ years, "NO" otherwise.
+- fcf: "YES" if free cash flow positive in most recent year, "NO" if negative.
 - roe: "YES" if ROE > 15%, "NO" otherwise.
-- int_cov: Interest coverage (operating income / interest expense). "ABOVE_10"=very safe, "ABOVE_4"=adequate, "NO_DEBT"=no significant debt, "NO"=insufficient or negative.
-- moat: "TWO_MOATS"=2+ competitive advantages (brand+network/cost/switching), "ONE_MOAT"=one clear advantage, "NO"=no clear moat.
-- net_margin: "ABOVE_20"=net margin>20%, "ABOVE_10"=>10%, "INCREASING"=improving trend even if below 10%, "NO"=low and not improving.
+- int_cov: "ABOVE_10"=very safe, "ABOVE_4"=adequate, "NO_DEBT"=no significant debt, "NO"=insufficient.
+- moat: "TWO_MOATS"=2+ advantages (brand+network/cost/switching), "ONE_MOAT"=one clear advantage, "NO"=none.
+- net_margin: "ABOVE_20">20%, "ABOVE_10">10%, "INCREASING"=improving trend, "NO"=low and flat.
 - has_dividends: "YES" if company pays regular dividends, "NO" otherwise.
-- policy: "YES" if shareholder-friendly (consistent buybacks/dividends, reasonable exec pay), "NO" otherwise.
-- tech_risk: "LOW"=stable/defensive industry, "MEDIUM"=some disruption risk, "HIGH"=significant disruption risk.
-- mgmt_risk: "LOW"=strong proven management, "MEDIUM"=some concerns, "HIGH"=significant concerns.`;
+- policy: "YES" if shareholder-friendly (buybacks/dividends, reasonable exec pay), "NO" otherwise.
+- tech_risk: "LOW"=stable/defensive, "MEDIUM"=some risk, "HIGH"=significant disruption risk.
+- mgmt_risk: "LOW"=strong proven management, "MEDIUM"=some concerns, "HIGH"=significant concerns.
+
+Definitions (valuation fields — use actual numbers from the data above):
+- eps_value: Current trailing EPS as a number (from "EPS (TTM)" above), null if unavailable.
+- growth_rate: For Growth stocks only — a fair P/E multiplier reflecting growth prospects (e.g., 15 for slow/mature, 20-25 for moderate growth, 30+ for high growth). Set null for Dividends or Asset type.
+- expected_dividend: Annual dividend per share in dollars (from "Annual Dividend/Share" above), null if no dividends.
+- bvps: Book value per share as a number (from "Book Value/Share" above), null if unavailable.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -81,7 +93,7 @@ Definitions:
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
-        max_tokens: 300,
+        max_tokens: 400,
       }),
     });
 
