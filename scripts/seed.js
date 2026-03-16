@@ -1,6 +1,6 @@
 // Run: node scripts/seed.js
 // Pre-populate with data from your Google Sheet (BOS表格V7.3)
-require('dotenv').config({ path: '.env.local' });
+try { require('dotenv').config({ path: '.env.local' }); } catch { /* dotenv optional */ }
 const { neon } = require('@neondatabase/serverless');
 
 const STOCKS = [
