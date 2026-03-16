@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "setup": "vercel env pull .env.development.local && npm install",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
