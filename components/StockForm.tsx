@@ -165,6 +165,7 @@ export default function StockForm({ initialData, mode }: Props) {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(stockSchema),
@@ -237,7 +238,7 @@ export default function StockForm({ initialData, mode }: Props) {
 
       // Fill valuation inputs from Yahoo Finance metrics (reliable factual data)
       if (metrics) {
-        if (metrics.eps != null && metrics.eps > 0)
+        if (metrics.eps != null)
           setValue('eps_value', String(metrics.eps));
         if (metrics.bookValue != null && metrics.bookValue > 0)
           setValue('bvps', String(metrics.bookValue));
@@ -271,12 +272,12 @@ export default function StockForm({ initialData, mode }: Props) {
           if (ai.policy) setValue('policy', ai.policy);
           if (ai.tech_risk) setValue('tech_risk', ai.tech_risk);
           if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk);
-          // Valuation inputs from AI — growth_rate only (Yahoo Finance fills the rest)
+          // Valuation inputs from AI
           if (ai.growth_rate != null) setValue('growth_rate', String(ai.growth_rate));
-          // Fallback: use AI values if Yahoo Finance didn't fill them
-          if (ai.eps_value != null && !watchedData.eps_value) setValue('eps_value', String(ai.eps_value));
-          if (ai.expected_dividend != null && !watchedData.expected_dividend) setValue('expected_dividend', String(ai.expected_dividend));
-          if (ai.bvps != null && !watchedData.bvps) setValue('bvps', String(ai.bvps));
+          // AI fills gaps where Yahoo Finance returned nothing (use getValues for current state)
+          if (ai.eps_value != null && !getValues('eps_value')) setValue('eps_value', String(ai.eps_value));
+          if (ai.expected_dividend != null && !getValues('expected_dividend')) setValue('expected_dividend', String(ai.expected_dividend));
+          if (ai.bvps != null && !getValues('bvps')) setValue('bvps', String(ai.bvps));
         }
       } catch {
         // AI is best-effort, continue without it
