@@ -1,3 +1,9 @@
+/**
+ * Yahoo Finance data fetcher — pure fetch, no external library.
+ * Uses Yahoo Finance v8 / v10 REST endpoints directly.
+ * Works on any Node version, no yahoo-finance2 dependency.
+ */
+
 import type {
   CompanyProfile,
   KeyMetrics,
@@ -6,77 +12,94 @@ import type {
   PricePoint,
 } from '@/types/financials';
 
+const YF_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+  'Accept': 'application/json',
+};
+
 export type PriceResult = {
   symbol: string;
   price: number | null;
   name: string | null;
 };
 
-// Cached instance — avoids re-importing on every request
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _yf: any = null;
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getYf(): Promise<any> {
-  if (_yf) return _yf;
-  // Dynamic import handles ESM-only packages (yahoo-finance2 v3) in Next.js
-  const mod = await import('yahoo-finance2');
-  // v3 exports { YahooFinance }; fall back to .default for any compatibility shim
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Ctor: any = (mod as any).YahooFinance ?? (mod as any).default;
-  _yf = typeof Ctor === 'function'
-    ? new Ctor({ suppressNotices: ['yahooSurvey', 'ripHistorical'] })
-    : Ctor;
-  return _yf;
+async function yfChart(ticker: string, params = 'interval=1d&range=1d') {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?${params}`;
+  const res = await fetch(url, { headers: YF_HEADERS });
+  if (!res.ok) throw new Error(`chart HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.chart?.error) throw new Error(json.chart.error.description);
+  return json?.chart?.result?.[0] ?? null;
 }
+
+async function yfSummary(ticker: string, modules: string[]) {
+  const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=${modules.join(',')}`;
+  const res = await fetch(url, { headers: YF_HEADERS });
+  if (!res.ok) throw new Error(`quoteSummary HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.quoteSummary?.error) throw new Error(json.quoteSummary.error.description);
+  return json?.quoteSummary?.result?.[0] ?? null;
+}
+
+function raw(val: unknown): number | null {
+  if (val == null) return null;
+  if (typeof val === 'object' && 'raw' in (val as object)) return (val as { raw: number }).raw ?? null;
+  return typeof val === 'number' ? val : null;
+}
+
+// ── Price ─────────────────────────────────────────────────────────────────────
 
 export async function getStockPrice(symbol: string): Promise<PriceResult> {
   try {
-    const yf = await getYf();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const quote: any = await yf.quote(symbol);
+    const result = await yfChart(symbol.toUpperCase());
+    const meta = result?.meta;
     return {
-      symbol,
-      price: quote?.regularMarketPrice ?? null,
-      name: quote?.longName ?? quote?.shortName ?? null,
+      symbol: symbol.toUpperCase(),
+      price: meta?.regularMarketPrice ?? null,
+      name: meta?.longName ?? meta?.shortName ?? null,
     };
   } catch (error) {
     console.error(`[yahoo-finance] getStockPrice(${symbol}) failed:`, error);
-    return { symbol, price: null, name: null };
+    return { symbol: symbol.toUpperCase(), price: null, name: null };
   }
 }
 
 export async function getStockPrices(symbols: string[]): Promise<PriceResult[]> {
-  const results = await Promise.allSettled(symbols.map(getStockPrice));
+  const results = await Promise.allSettled(symbols.map(s => getStockPrice(s)));
   return results.map((r, i) =>
     r.status === 'fulfilled' ? r.value : { symbol: symbols[i], price: null, name: null }
   );
 }
 
+// ── Company Profile ───────────────────────────────────────────────────────────
+
 export async function getCompanyProfile(ticker: string): Promise<CompanyProfile | null> {
   try {
-    const yf = await getYf();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [quote, summaryDetail]: [any, any] = await Promise.all([
-      yf.quote(ticker),
-      yf.quoteSummary(ticker, { modules: ['assetProfile', 'summaryDetail', 'price'], validateResult: false }),
+    const t = ticker.toUpperCase();
+    const [chartResult, summary] = await Promise.all([
+      yfChart(t),
+      yfSummary(t, ['assetProfile', 'price']),
     ]);
 
-    const profile = summaryDetail?.assetProfile ?? {};
-    const price = summaryDetail?.price ?? {};
+    const meta    = chartResult?.meta ?? {};
+    const profile = summary?.assetProfile ?? {};
+    const price   = summary?.price ?? {};
 
     return {
-      ticker: ticker.toUpperCase(),
-      name: price?.longName ?? quote?.longName ?? quote?.shortName ?? ticker,
+      ticker: t,
+      name: raw(price?.longName) as unknown as string
+        ?? meta?.longName ?? meta?.shortName ?? t,
       description: profile?.longBusinessSummary ?? '',
-      sector: profile?.sector ?? '',
-      industry: profile?.industry ?? '',
-      employees: profile?.fullTimeEmployees ?? null,
-      website: profile?.website ?? '',
-      country: profile?.country ?? '',
-      exchange: quote?.fullExchangeName ?? quote?.exchange ?? '',
-      currency: quote?.currency ?? 'USD',
-      marketCap: price?.marketCap ?? quote?.marketCap ?? null,
+      sector:      profile?.sector    ?? '',
+      industry:    profile?.industry  ?? '',
+      employees:   profile?.fullTimeEmployees ?? null,
+      website:     profile?.website   ?? '',
+      country:     profile?.country   ?? '',
+      exchange:    meta?.exchangeName ?? '',
+      currency:    meta?.currency     ?? 'USD',
+      marketCap:   raw(price?.marketCap),
       logo: `https://logo.clearbit.com/${(profile?.website ?? '').replace(/https?:\/\//, '').split('/')[0]}`,
     };
   } catch (error) {
@@ -85,46 +108,44 @@ export async function getCompanyProfile(ticker: string): Promise<CompanyProfile 
   }
 }
 
+// ── Key Metrics ───────────────────────────────────────────────────────────────
+
 export async function getKeyMetrics(ticker: string): Promise<KeyMetrics | null> {
   try {
-    const yf = await getYf();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const summary: any = await yf.quoteSummary(ticker, {
-      modules: [
-        'summaryDetail',
-        'defaultKeyStatistics',
-        'financialData',
-        'price',
-      ],
-      validateResult: false,
-    });
+    const t = ticker.toUpperCase();
+    const summary = await yfSummary(t, [
+      'summaryDetail', 'defaultKeyStatistics', 'financialData', 'price',
+    ]);
 
-    const sd = summary?.summaryDetail ?? {};
+    const sd = summary?.summaryDetail        ?? {};
     const ks = summary?.defaultKeyStatistics ?? {};
-    const fd = summary?.financialData ?? {};
-    const price = summary?.price ?? {};
+    const fd = summary?.financialData        ?? {};
+    const pr = summary?.price                ?? {};
 
     return {
-      ticker: ticker.toUpperCase(),
-      peRatio: sd?.trailingPE?.raw ?? sd?.trailingPE ?? null,
-      pbRatio: ks?.priceToBook?.raw ?? ks?.priceToBook ?? null,
-      psRatio: ks?.priceToSalesTrailing12Months?.raw ?? null,
-      evToEbitda: ks?.enterpriseToEbitda?.raw ?? ks?.enterpriseToEbitda ?? null,
-      debtToEquity: fd?.debtToEquity?.raw ?? fd?.debtToEquity ?? null,
-      currentRatio: fd?.currentRatio?.raw ?? fd?.currentRatio ?? null,
-      roe: fd?.returnOnEquity?.raw ?? fd?.returnOnEquity ?? null,
-      roa: fd?.returnOnAssets?.raw ?? fd?.returnOnAssets ?? null,
-      grossMargin: fd?.grossMargins?.raw ?? fd?.grossMargins ?? null,
-      operatingMargin: fd?.operatingMargins?.raw ?? fd?.operatingMargins ?? null,
-      netMargin: fd?.profitMargins?.raw ?? fd?.profitMargins ?? null,
-      eps: ks?.trailingEps?.raw ?? ks?.trailingEps ?? null,
-      bookValue: ks?.bookValue?.raw ?? ks?.bookValue ?? null,
-      dividendYield: sd?.dividendYield?.raw ?? sd?.dividendYield ?? null,
-      payoutRatio: sd?.payoutRatio?.raw ?? sd?.payoutRatio ?? null,
-      beta: sd?.beta?.raw ?? sd?.beta ?? null,
-      fiftyTwoWeekHigh: price?.fiftyTwoWeekHigh?.raw ?? sd?.fiftyTwoWeekHigh ?? null,
-      fiftyTwoWeekLow: price?.fiftyTwoWeekLow?.raw ?? sd?.fiftyTwoWeekLow ?? null,
-      averageVolume: sd?.averageVolume?.raw ?? sd?.averageVolume ?? null,
+      ticker: t,
+      peRatio:            raw(sd?.trailingPE)       ?? raw(pr?.trailingPE),
+      pbRatio:            raw(ks?.priceToBook),
+      psRatio:            raw(ks?.priceToSalesTrailing12Months),
+      evToEbitda:         raw(ks?.enterpriseToEbitda),
+      debtToEquity:       raw(fd?.debtToEquity),
+      currentRatio:       raw(fd?.currentRatio),
+      roe:                raw(fd?.returnOnEquity),
+      roa:                raw(fd?.returnOnAssets),
+      grossMargin:        raw(fd?.grossMargins),
+      operatingMargin:    raw(fd?.operatingMargins),
+      netMargin:          raw(fd?.profitMargins),
+      eps:                raw(ks?.trailingEps),
+      bookValue:          raw(ks?.bookValue),
+      dividendYield:      raw(sd?.dividendYield),
+      dividendRate:       raw(sd?.dividendRate),
+      payoutRatio:        raw(sd?.payoutRatio),
+      beta:               raw(sd?.beta),
+      fiftyTwoWeekHigh:   raw(sd?.fiftyTwoWeekHigh),
+      fiftyTwoWeekLow:    raw(sd?.fiftyTwoWeekLow),
+      averageVolume:      raw(sd?.averageVolume),
+      revenueGrowth:      raw(fd?.revenueGrowth),
+      freeCashflow:       raw(fd?.freeCashflow),
     };
   } catch (error) {
     console.error(`[yahoo-finance] getKeyMetrics(${ticker}) failed:`, error);
@@ -132,48 +153,48 @@ export async function getKeyMetrics(ticker: string): Promise<KeyMetrics | null> 
   }
 }
 
+// ── Annual Financials ─────────────────────────────────────────────────────────
+
 export async function getAnnualFinancials(ticker: string): Promise<AnnualFinancial[]> {
   try {
-    const yf = await getYf();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const summary: any = await yf.quoteSummary(ticker, {
-      modules: ['incomeStatementHistory', 'cashflowStatementHistory'],
-      validateResult: false,
-    });
+    const t = ticker.toUpperCase();
+    const summary = await yfSummary(t, [
+      'incomeStatementHistory', 'cashflowStatementHistory',
+    ]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const incomeStatements: any[] = summary?.incomeStatementHistory?.incomeStatementHistory ?? [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cashflows: any[] = summary?.cashflowStatementHistory?.cashflowStatements ?? [];
+    const incomeStatements: unknown[] =
+      summary?.incomeStatementHistory?.incomeStatementHistory ?? [];
+    const cashflows: unknown[] =
+      summary?.cashflowStatementHistory?.cashflowStatements ?? [];
 
     const cashflowByYear = new Map<number, number | null>();
-    for (const cf of cashflows) {
-      const year = new Date(cf.endDate?.raw ? cf.endDate.raw * 1000 : cf.endDate).getFullYear();
-      const fcf =
-        (cf.totalCashFromOperatingActivities?.raw ?? cf.totalCashFromOperatingActivities ?? 0) -
-        Math.abs(cf.capitalExpenditures?.raw ?? cf.capitalExpenditures ?? 0);
-      cashflowByYear.set(year, fcf);
+    for (const cf of cashflows as Record<string, unknown>[]) {
+      const endRaw = (cf.endDate as { raw?: number } | undefined)?.raw;
+      const year   = new Date(endRaw ? endRaw * 1000 : String(cf.endDate)).getFullYear();
+      const ops    = raw(cf.totalCashFromOperatingActivities) ?? 0;
+      const capex  = Math.abs(raw(cf.capitalExpenditures) ?? 0);
+      cashflowByYear.set(year, ops - capex);
     }
 
-    return incomeStatements.map((stmt) => {
-      const endDate = stmt.endDate?.raw ? new Date(stmt.endDate.raw * 1000) : new Date(stmt.endDate);
-      const year = endDate.getFullYear();
-      const revenue = stmt.totalRevenue?.raw ?? stmt.totalRevenue ?? null;
-      const netIncome = stmt.netIncome?.raw ?? stmt.netIncome ?? null;
-      const grossProfit = stmt.grossProfit?.raw ?? stmt.grossProfit ?? null;
-      const operatingIncome = stmt.operatingIncome?.raw ?? stmt.operatingIncome ?? null;
+    return (incomeStatements as Record<string, unknown>[]).map(stmt => {
+      const endRaw   = (stmt.endDate as { raw?: number } | undefined)?.raw;
+      const year     = new Date(endRaw ? endRaw * 1000 : String(stmt.endDate)).getFullYear();
+      const revenue  = raw(stmt.totalRevenue);
+      const netIncome = raw(stmt.netIncome);
+      const grossProfit = raw(stmt.grossProfit);
+      const operatingIncome = raw(stmt.operatingIncome);
 
       return {
         year,
         revenue,
         netIncome,
-        eps: stmt.dilutedEPS?.raw ?? stmt.dilutedEPS ?? null,
-        freeCashFlow: cashflowByYear.get(year) ?? null,
+        eps:             raw(stmt.dilutedEPS),
+        freeCashFlow:    cashflowByYear.get(year) ?? null,
         grossProfit,
         operatingIncome,
-        grossMargin: revenue && grossProfit ? grossProfit / revenue : null,
+        grossMargin:     revenue && grossProfit     ? grossProfit / revenue     : null,
         operatingMargin: revenue && operatingIncome ? operatingIncome / revenue : null,
-        netMargin: revenue && netIncome ? netIncome / revenue : null,
+        netMargin:       revenue && netIncome       ? netIncome / revenue       : null,
       } as AnnualFinancial;
     });
   } catch (error) {
@@ -182,84 +203,82 @@ export async function getAnnualFinancials(ticker: string): Promise<AnnualFinanci
   }
 }
 
-export type PeriodOption = '1M' | '3M' | '6M' | '1Y' | '5Y' | 'MAX';
-
-const periodMap: Record<PeriodOption, { period1: string; interval: string }> = {
-  '1M': { period1: `${Math.floor((Date.now() - 30 * 86400000) / 1000)}`, interval: '1d' },
-  '3M': { period1: `${Math.floor((Date.now() - 90 * 86400000) / 1000)}`, interval: '1d' },
-  '6M': { period1: `${Math.floor((Date.now() - 180 * 86400000) / 1000)}`, interval: '1d' },
-  '1Y': { period1: `${Math.floor((Date.now() - 365 * 86400000) / 1000)}`, interval: '1wk' },
-  '5Y': { period1: `${Math.floor((Date.now() - 5 * 365 * 86400000) / 1000)}`, interval: '1mo' },
-  MAX: { period1: '0', interval: '1mo' },
-};
+// ── Dividend History ──────────────────────────────────────────────────────────
 
 export async function getDividendHistory(ticker: string): Promise<DividendRecord[]> {
   try {
-    const yf = await getYf();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await yf.historical(ticker, {
-      period1: new Date(Date.now() - 10 * 365 * 86400000).toISOString().split('T')[0],
-      period2: new Date().toISOString().split('T')[0],
-      events: 'dividends',
-    });
+    const t = ticker.toUpperCase();
+    const tenYearsAgo = Math.floor((Date.now() - 10 * 365 * 86400000) / 1000);
+    const result = await yfChart(
+      t,
+      `interval=1mo&period1=${tenYearsAgo}&period2=${Math.floor(Date.now() / 1000)}&events=div`
+    );
 
-    if (!result || !Array.isArray(result)) return [];
+    const dividends: Record<string, { amount: number }> =
+      result?.events?.dividends ?? {};
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return result.map((d: any) => {
-      const date = d.date instanceof Date ? d.date.toISOString().split('T')[0] : String(d.date);
-      return {
-        date,
-        amount: d.dividends ?? d.amount ?? 0,
-        year: new Date(date).getFullYear(),
-      };
-    }).filter((d: DividendRecord) => d.amount > 0);
+    return Object.entries(dividends)
+      .map(([ts, d]) => {
+        const date = new Date(parseInt(ts) * 1000).toISOString().split('T')[0];
+        return { date, amount: d.amount ?? 0, year: new Date(date).getFullYear() };
+      })
+      .filter(d => d.amount > 0)
+      .sort((a, b) => a.date.localeCompare(b.date));
   } catch (error) {
     console.error(`[yahoo-finance] getDividendHistory(${ticker}) failed:`, error);
     return [];
   }
 }
 
+// ── Price History ─────────────────────────────────────────────────────────────
+
+export type PeriodOption = '1M' | '3M' | '6M' | '1Y' | '5Y' | 'MAX';
+
+const periodParams: Record<PeriodOption, string> = {
+  '1M':  `interval=1d&range=1mo`,
+  '3M':  `interval=1d&range=3mo`,
+  '6M':  `interval=1d&range=6mo`,
+  '1Y':  `interval=1wk&range=1y`,
+  '5Y':  `interval=1mo&range=5y`,
+  'MAX': `interval=1mo&range=max`,
+};
+
 export async function getPriceHistory(
   ticker: string,
   period: PeriodOption = '1Y'
 ): Promise<PricePoint[]> {
   try {
-    const yf = await getYf();
-    const { period1, interval } = periodMap[period];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await yf.historical(ticker, {
-      period1: period === 'MAX' ? '1900-01-01' : new Date(parseInt(period1) * 1000).toISOString().split('T')[0],
-      period2: new Date().toISOString().split('T')[0],
-      interval: interval as '1d' | '1wk' | '1mo',
-    });
+    const result = await yfChart(ticker.toUpperCase(), periodParams[period]);
+    const timestamps: number[]  = result?.timestamp ?? [];
+    const closes: number[]      = result?.indicators?.quote?.[0]?.close ?? [];
+    const opens: number[]       = result?.indicators?.quote?.[0]?.open  ?? [];
+    const highs: number[]       = result?.indicators?.quote?.[0]?.high  ?? [];
+    const lows: number[]        = result?.indicators?.quote?.[0]?.low   ?? [];
+    const volumes: number[]     = result?.indicators?.quote?.[0]?.volume ?? [];
 
-    if (!result || !Array.isArray(result)) return [];
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return result.map((p: any) => ({
-      date: p.date instanceof Date ? p.date.toISOString().split('T')[0] : String(p.date),
-      close: p.close ?? 0,
-      open: p.open ?? null,
-      high: p.high ?? null,
-      low: p.low ?? null,
-      volume: p.volume ?? null,
-    }));
+    return timestamps
+      .map((ts, i) => ({
+        date:   new Date(ts * 1000).toISOString().split('T')[0],
+        close:  closes[i]  ?? 0,
+        open:   opens[i]   ?? null,
+        high:   highs[i]   ?? null,
+        low:    lows[i]    ?? null,
+        volume: volumes[i] ?? null,
+      }))
+      .filter(p => p.close > 0);
   } catch (error) {
     console.error(`[yahoo-finance] getPriceHistory(${ticker}) failed:`, error);
     return [];
   }
 }
 
+// ── Market Hours ──────────────────────────────────────────────────────────────
+
 export function isMarketOpen(): boolean {
   const now = new Date();
-  const day = now.getUTCDay(); // 0=Sun, 6=Sat
+  const day = now.getUTCDay();
   if (day === 0 || day === 6) return false;
-
-  const hours = now.getUTCHours();
-  const minutes = now.getUTCMinutes();
-  const totalMinutes = hours * 60 + minutes;
-
-  // US market: 9:30 AM – 4:00 PM EST = 13:30 – 20:00 UTC
+  const totalMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  // US market 9:30–16:00 ET = 13:30–20:00 UTC
   return totalMinutes >= 13 * 60 + 30 && totalMinutes <= 20 * 60;
 }

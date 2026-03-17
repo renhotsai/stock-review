@@ -29,11 +29,14 @@ export interface KeyMetrics {
   eps: number | null;
   bookValue: number | null;
   dividendYield: number | null;
+  dividendRate: number | null;
   payoutRatio: number | null;
   beta: number | null;
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
   averageVolume: number | null;
+  revenueGrowth: number | null;
+  freeCashflow: number | null;
 }
 
 export interface AnnualFinancial {

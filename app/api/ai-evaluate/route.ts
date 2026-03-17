@@ -18,9 +18,11 @@ export async function POST(request: Request) {
   const symbol: string | undefined = body.symbol;
   if (!symbol) return NextResponse.json({ error: 'symbol required' }, { status: 400 });
 
-  const baseUrl = process.env.VERCEL_URL
+  const baseUrl = process.env.VERCEL_BRANCH_URL
+    ? `https://${process.env.VERCEL_BRANCH_URL}`
+    : process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:3000';
+    : `http://localhost:${process.env.PORT ?? 3000}`;
 
   const res = await fetch(`${baseUrl}/api/financials/${symbol.toUpperCase()}`);
   if (!res.ok) return NextResponse.json(getEmptyResult());
@@ -97,8 +99,8 @@ export async function POST(request: Request) {
   // Valuation fields
   const eps_value = m?.eps ?? null;
   const growth_rate = revenueGrowth != null ? Math.round(revenueGrowth * 100) : null;
-  // expected_dividend: annualised per-share dividend = yield * price (price not available here, skip)
-  const expected_dividend: number | null = null;
+  // expected_dividend: annual dividend per share from Yahoo Finance summaryDetail
+  const expected_dividend: number | null = m?.dividendRate ?? null;
   const bvps = m?.bookValue ?? null;
 
   return NextResponse.json({
