@@ -231,6 +231,12 @@ export default function StockForm({ initialData, mode }: Props) {
         return;
       }
 
+      if (!fin.profile && !fin.metrics && (!fin.annuals || fin.annuals.length === 0)) {
+        setFetchError('無法取得股票資料，請稍後再試或確認代號是否正確');
+        setProcessing(false);
+        return;
+      }
+
       const { profile, metrics, annuals } = fin;
 
       // Build new values from Yahoo Finance (factual data)
