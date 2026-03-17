@@ -15,7 +15,8 @@ export type PriceResult = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getYf(): any {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const yf = require('yahoo-finance2').default;
+  const { YahooFinance } = require('yahoo-finance2');
+  const yf = new YahooFinance();
   // Suppress data-usage notices that block requests on serverless environments
   try { yf.suppressNotices(['yahooSurvey', 'ripHistorical']); } catch { /* ignore */ }
   return yf;

@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getYf(): any {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('yahoo-finance2').default;
+  const { YahooFinance } = require('yahoo-finance2');
+  return new YahooFinance();
 }
 
 export async function GET(request: NextRequest) {
