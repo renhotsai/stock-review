@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { calculateValuation } from '@/lib/valuation';
@@ -168,6 +168,7 @@ export default function StockForm({ initialData, mode }: Props) {
     setValue,
     getValues,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(stockSchema),
@@ -490,22 +491,34 @@ export default function StockForm({ initialData, mode }: Props) {
             {/* Stock type selector */}
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">股票類型</span>
-              <select {...register('type')} className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="Growth">Growth 成長股</option>
-                <option value="Dividends">Dividends 股息股</option>
-                <option value="Asset">Asset 資產股</option>
-              </select>
+              <Controller
+                name="type"
+                control={control}
+                render={({ field }) => (
+                  <select {...field} className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="Growth">Growth 成長股</option>
+                    <option value="Dividends">Dividends 股息股</option>
+                    <option value="Asset">Asset 資產股</option>
+                  </select>
+                )}
+              />
               <span className="text-xs text-gray-400">影響估值方式</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {FACTS_FIELDS.map((field) => (
                 <div key={field.key}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
-                  <select {...register(field.key as keyof FormData)} className={selectClass}>
-                    {field.options.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  <Controller
+                    name={field.key as keyof FormData}
+                    control={control}
+                    render={({ field: ctrlField }) => (
+                      <select {...ctrlField} className={selectClass}>
+                        {field.options.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    )}
+                  />
                 </div>
               ))}
             </div>
