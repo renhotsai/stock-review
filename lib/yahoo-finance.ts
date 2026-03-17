@@ -19,7 +19,7 @@ import type {
 
 // ── FMP configuration ─────────────────────────────────────────────────────────
 
-const FMP_BASE = 'https://financialmodelingprep.com/api';
+const FMP_BASE = 'https://financialmodelingprep.com';
 
 function fmpKey(): string {
   const key = process.env.FMP_API_KEY;
@@ -212,7 +212,7 @@ export async function getCompanyProfile(
 ): Promise<CompanyProfile | null> {
   try {
     const t = ticker.toUpperCase();
-    const p = await fmpFetch<FmpProfile>(`/v3/profile/${t}?`);
+    const p = await fmpFetch<FmpProfile>(`/stable/profile?symbol=${t}&`);
     if (!p) return null;
 
     const employees =
@@ -250,9 +250,9 @@ export async function getKeyMetrics(ticker: string): Promise<KeyMetrics | null> 
     //                 key-metrics-ttm (PE, PB, PS, EV/EBITDA, D/E, dividends…)
     //                 ratios-ttm (margins, ROA, ROE)
     const [profile, km, ratios] = await Promise.all([
-      fmpFetch<FmpProfile>(`/v3/profile/${t}?`),
-      fmpFetch<FmpKeyMetricsTTM>(`/v3/key-metrics-ttm/${t}?`),
-      fmpFetch<FmpRatiosTTM>(`/v3/ratios-ttm/${t}?`),
+      fmpFetch<FmpProfile>(`/stable/profile?symbol=${t}&`),
+      fmpFetch<FmpKeyMetricsTTM>(`/stable/key-metrics-ttm?symbol=${t}&`),
+      fmpFetch<FmpRatiosTTM>(`/stable/ratios-ttm?symbol=${t}&`),
     ]);
 
     if (!km && !ratios && !profile) return null;
@@ -310,10 +310,10 @@ export async function getAnnualFinancials(
 
     const [incomeStmts, cashFlows] = await Promise.all([
       fmpFetchList<FmpIncomeStatement>(
-        `/v3/income-statement/${t}?period=annual&limit=4&`,
+        `/stable/income-statement?symbol=${t}&period=annual&limit=4&`,
       ),
       fmpFetchList<FmpCashFlowStatement>(
-        `/v3/cash-flow-statement/${t}?period=annual&limit=4&`,
+        `/stable/cash-flow-statement?symbol=${t}&period=annual&limit=4&`,
       ),
     ]);
 
