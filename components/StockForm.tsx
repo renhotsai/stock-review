@@ -217,13 +217,9 @@ export default function StockForm({ initialData, mode }: Props) {
     setProcessingPhase(0);
 
     try {
-      // Phase 0: fetch financials + price in parallel
-      const [finRes, priceRes] = await Promise.all([
-        fetch(`/api/financials/${symbol}`),
-        fetch(`/api/price/${symbol}`),
-      ]);
+      // Phase 0: fetch FMP financials
+      const finRes = await fetch(`/api/financials/${symbol}`);
       const fin = finRes.ok ? await finRes.json() : null;
-      const priceData = priceRes.ok ? await priceRes.json() : null;
 
       if (!fin) {
         setFetchError('找不到此股票代號，請確認後再試');
@@ -237,85 +233,59 @@ export default function StockForm({ initialData, mode }: Props) {
         return;
       }
 
-      const { profile, metrics, annuals } = fin;
-
-      // Build new values from FMP data (factual data)
-      const newValues: Partial<FormData> = {
-        // Prefer FMP profile name; fall back to Yahoo Finance name from price API
-        name: profile?.name ?? priceData?.name ?? '',
-        added_date: new Date().toISOString().split('T')[0],
-      };
-
-      if (metrics) {
-        // EPS: TTM from FMP; fall back to latest annual EPS
-        const epsVal = metrics.eps ?? annuals?.[0]?.eps ?? null;
-        if (epsVal != null) newValues.eps_value = String(epsVal);
-
-        // BVPS: only when positive (negative book value = buybacks, not meaningful)
-        if (metrics.bookValue != null && metrics.bookValue > 0)
-          newValues.bvps = String(metrics.bookValue);
-
-        // Annual dividend: prefer dividendRate ($ per share) over yield × price
-        if (metrics.dividendRate != null && metrics.dividendRate > 0) {
-          newValues.expected_dividend = metrics.dividendRate.toFixed(2);
-        } else if (metrics.dividendYield != null && priceData?.price) {
-          const annualDiv = (priceData.price * metrics.dividendYield).toFixed(2);
-          if (parseFloat(annualDiv) > 0) newValues.expected_dividend = annualDiv;
-        }
-
-        // Unambiguous FACTS from data (AI will override with nuanced analysis)
-        const hasDividend =
-          (metrics.dividendRate != null ? metrics.dividendRate : metrics.dividendYield ?? 0) > 0;
-        newValues.has_dividends = hasDividend ? 'YES' : 'NO';
-      }
-
-      // FCF: positive latest annual free cash flow → YES
-      if (annuals && annuals.length > 0 && annuals[0].freeCashFlow != null) {
-        newValues.fcf = annuals[0].freeCashFlow > 0 ? 'YES' : 'NO';
-      }
-
-      // Phase 1: AI evaluation
+      // Phase 1: AI analyses ALL financial data and fills in the complete form
       setProcessingPhase(1);
 
       let aiOk = false;
+      const newValues: Partial<FormData> = {
+        added_date: new Date().toISOString().split('T')[0],
+      };
+
       try {
         const aiRes = await fetch('/api/ai-evaluate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol }),
+          body: JSON.stringify({ symbol, financials: fin }),
         });
+
         if (aiRes.ok) {
           const ai = await aiRes.json();
-          if (ai.type && ['Growth', 'Dividends', 'Asset'].includes(ai.type)) newValues.type = ai.type;
-          if (ai.eps) newValues.eps = ai.eps;
-          if (ai.fcf) newValues.fcf = ai.fcf;
-          if (ai.roe) newValues.roe = ai.roe;
-          if (ai.int_cov) newValues.int_cov = ai.int_cov;
-          if (ai.moat) newValues.moat = ai.moat;
-          if (ai.net_margin) newValues.net_margin = ai.net_margin;
+
+          // Apply ALL fields returned by AI
+          if (ai.name)        newValues.name        = ai.name;
+          if (ai.type && ['Growth', 'Dividends', 'Asset'].includes(ai.type))
+                              newValues.type        = ai.type;
+          if (ai.eps)         newValues.eps         = ai.eps;
+          if (ai.fcf)         newValues.fcf         = ai.fcf;
+          if (ai.roe)         newValues.roe         = ai.roe;
+          if (ai.int_cov)     newValues.int_cov     = ai.int_cov;
+          if (ai.moat)        newValues.moat        = ai.moat;
+          if (ai.net_margin)  newValues.net_margin  = ai.net_margin;
           if (ai.has_dividends) newValues.has_dividends = ai.has_dividends;
-          if (ai.policy) newValues.policy = ai.policy;
-          if (ai.tech_risk) newValues.tech_risk = ai.tech_risk;
-          if (ai.mgmt_risk) newValues.mgmt_risk = ai.mgmt_risk;
-          if (ai.growth_rate != null) newValues.growth_rate = String(ai.growth_rate);
-          // AI fills gaps where Yahoo Finance returned nothing
-          if (ai.eps_value != null && !newValues.eps_value) newValues.eps_value = String(ai.eps_value);
-          if (ai.expected_dividend != null && !newValues.expected_dividend) newValues.expected_dividend = String(ai.expected_dividend);
-          if (ai.bvps != null && !newValues.bvps) newValues.bvps = String(ai.bvps);
+          if (ai.policy)      newValues.policy      = ai.policy;
+          if (ai.tech_risk)   newValues.tech_risk   = ai.tech_risk;
+          if (ai.mgmt_risk)   newValues.mgmt_risk   = ai.mgmt_risk;
+
+          if (ai.eps_value          != null) newValues.eps_value          = String(ai.eps_value);
+          if (ai.growth_rate        != null) newValues.growth_rate        = String(ai.growth_rate);
+          if (ai.expected_dividend  != null) newValues.expected_dividend  = String(ai.expected_dividend);
+          if (ai.dividend_return_rate != null) newValues.dividend_return_rate = String(ai.dividend_return_rate);
+          if (ai.bvps               != null) newValues.bvps               = String(ai.bvps);
+          if (ai.discount_factor    != null) newValues.discount_factor    = String(ai.discount_factor);
+
           aiOk = true;
         }
       } catch {
-        // AI is best-effort, continue without it
+        // AI is best-effort; form will show with empty fields for manual entry
       }
 
-      // Phase 2: apply all values at once via reset() to ensure DOM updates.
-      // Start from clean defaults so a second lookup never inherits a previous stock's data.
+      // Phase 2: apply all values via reset() and advance to review step
       setProcessingPhase(2);
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 500));
 
       const cleanDefaults: FormData = {
         symbol: getValues('symbol'),
-        name: '',
+        name: fin.profile?.name ?? '',
         type: 'Dividends',
         added_date: '',
         eps: 'EMPTY',
