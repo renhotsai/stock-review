@@ -32,7 +32,7 @@ export default function LookupClient({ ticker }: LookupClientProps) {
   const [tab, setTab] = useState<Tab>('profile');
 
   const { data: priceData } = useStockPrice(ticker);
-  const { data: financials, isLoading: finLoading } = useFinancials(
+  const { data: financials, isPending: finLoading } = useFinancials(
     ticker,
     tab === 'profile' || tab === 'financials'
   );
