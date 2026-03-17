@@ -6,7 +6,7 @@
   "scripts": {
     "setup": "vercel env pull .env.development.local && npm install",
     "dev": "next dev",
-    "build": "node scripts/setup-db.js && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "db:setup": "node scripts/setup-db.js",
@@ -40,6 +40,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.71.2",
+    "react-is": "^19.2.4",
     "recharts": "^3.8.0",
     "resend": "^6.9.3",
     "tailwind-merge": "^3.5.0",
