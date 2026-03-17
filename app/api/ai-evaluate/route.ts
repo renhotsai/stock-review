@@ -48,34 +48,36 @@ Respond ONLY with a valid JSON object (no markdown, no explanation):
 
 {
   "type": "Growth" | "Dividends" | "Asset",
-  "eps": "YES" | "NO",
-  "fcf": "YES" | "NO",
-  "roe": "YES" | "NO",
-  "int_cov": "ABOVE_10" | "ABOVE_4" | "NO_DEBT" | "NO",
-  "moat": "TWO_MOATS" | "ONE_MOAT" | "NO",
-  "net_margin": "ABOVE_20" | "ABOVE_10" | "INCREASING" | "NO",
-  "has_dividends": "YES" | "NO",
-  "policy": "YES" | "NO",
-  "tech_risk": "LOW" | "MEDIUM" | "HIGH",
-  "mgmt_risk": "LOW" | "MEDIUM" | "HIGH",
+  "eps": "YES" | "NO" | "EMPTY",
+  "fcf": "YES" | "NO" | "EMPTY",
+  "roe": "YES" | "NO" | "EMPTY",
+  "int_cov": "ABOVE_10" | "ABOVE_4" | "NO_DEBT" | "NO" | "EMPTY",
+  "moat": "TWO_MOATS" | "ONE_MOAT" | "NO" | "EMPTY",
+  "net_margin": "ABOVE_20" | "ABOVE_10" | "INCREASING" | "NO" | "EMPTY",
+  "has_dividends": "YES" | "NO" | "EMPTY",
+  "policy": "YES" | "NO" | "EMPTY",
+  "tech_risk": "LOW" | "MEDIUM" | "HIGH" | "EMPTY",
+  "mgmt_risk": "LOW" | "MEDIUM" | "HIGH" | "EMPTY",
   "eps_value": <number or null>,
   "growth_rate": <number or null>,
   "expected_dividend": <number or null>,
   "bvps": <number or null>
 }
 
+IMPORTANT RULE: Use "EMPTY" when the data shown above is N/A or clearly insufficient to make a confident judgment. Only use "NO" (or negative values) when you are CONFIDENT the criterion is NOT met based on actual data. Do NOT guess or assume negative when data is missing.
+
 Definitions (FACTS fields):
 - type: "Dividends"=mature consistent dividend payer (yield>1.5%). "Asset"=bank/insurance/real estate/capital-heavy (book value is key metric). "Growth"=high growth, reinvests earnings, low/no dividends.
-- eps: "YES" if EPS growing consistently over last 3+ years, "NO" otherwise.
-- fcf: "YES" if free cash flow positive in most recent year, "NO" if negative.
-- roe: "YES" if ROE > 15%, "NO" otherwise.
-- int_cov: "ABOVE_10"=very safe, "ABOVE_4"=adequate, "NO_DEBT"=no significant debt, "NO"=insufficient.
-- moat: "TWO_MOATS"=2+ advantages (brand+network/cost/switching), "ONE_MOAT"=one clear advantage, "NO"=none.
-- net_margin: "ABOVE_20">20%, "ABOVE_10">10%, "INCREASING"=improving trend, "NO"=low and flat.
-- has_dividends: "YES" if company pays regular dividends, "NO" otherwise.
-- policy: "YES" if shareholder-friendly (buybacks/dividends, reasonable exec pay), "NO" otherwise.
-- tech_risk: "LOW"=stable/defensive, "MEDIUM"=some risk, "HIGH"=significant disruption risk.
-- mgmt_risk: "LOW"=strong proven management, "MEDIUM"=some concerns, "HIGH"=significant concerns.
+- eps: "YES" if EPS clearly growing consistently over last 3+ years. "NO" if EPS clearly declining. "EMPTY" if EPS data is N/A or trend is unclear.
+- fcf: "YES" if free cash flow is clearly positive in most recent year. "NO" if clearly negative. "EMPTY" if FCF data is N/A.
+- roe: "YES" if ROE is clearly above 15%. "NO" if ROE is clearly below 15%. "EMPTY" if ROE data is N/A.
+- int_cov: "ABOVE_10"=interest coverage clearly >10x, "ABOVE_4"=clearly >4x, "NO_DEBT"=no significant debt, "NO"=coverage clearly insufficient. "EMPTY" if data unavailable.
+- moat: "TWO_MOATS"=2+ clear competitive advantages (brand+network/cost/switching). "ONE_MOAT"=one clear durable advantage. "NO"=no clear moat. "EMPTY" if unable to assess from available data.
+- net_margin: "ABOVE_20" if clearly >20%, "ABOVE_10" if clearly >10%, "INCREASING" if clearly improving trend, "NO" if low and flat/declining. "EMPTY" if data insufficient.
+- has_dividends: "YES" if company clearly pays regular dividends. "NO" if clearly no dividends. "EMPTY" if dividend data is N/A.
+- policy: "YES" if clearly shareholder-friendly (buybacks/dividends, reasonable exec pay). "NO" if clearly not. "EMPTY" if insufficient information.
+- tech_risk: "LOW"=stable/defensive business, "MEDIUM"=some disruption risk, "HIGH"=significant disruption risk. "EMPTY" if unable to assess.
+- mgmt_risk: "LOW"=strong proven management, "MEDIUM"=some concerns, "HIGH"=significant concerns. "EMPTY" if unable to assess.
 
 Definitions (valuation fields — use actual numbers from the data above):
 - eps_value: Current trailing EPS as a number (from "EPS (TTM)" above), null if unavailable.

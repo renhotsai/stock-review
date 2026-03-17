@@ -114,18 +114,54 @@ export async function setFinancialCache(
 export async function setupDatabase() {
   await sql`
     CREATE TABLE IF NOT EXISTS stocks (
-      id           SERIAL PRIMARY KEY,
-      symbol       VARCHAR(20)   UNIQUE NOT NULL,
-      name         VARCHAR(100),
-      type         VARCHAR(20),
-      score        DECIMAL(4,1)  DEFAULT 0,
-      entry_price  DECIMAL(10,2),
-      review_price DECIMAL(10,2),
-      added_date   DATE,
-      created_at   TIMESTAMPTZ   DEFAULT NOW(),
-      updated_at   TIMESTAMPTZ   DEFAULT NOW()
+      id                   SERIAL PRIMARY KEY,
+      symbol               VARCHAR(20)  UNIQUE NOT NULL,
+      name                 VARCHAR(100),
+      type                 VARCHAR(20),
+      score                DECIMAL(4,1)  DEFAULT 0,
+      entry_price          DECIMAL(10,2),
+      review_price         DECIMAL(10,2),
+      added_date           DATE,
+      created_at           TIMESTAMPTZ  DEFAULT NOW(),
+      updated_at           TIMESTAMPTZ  DEFAULT NOW(),
+      eps                  VARCHAR(20)  DEFAULT 'EMPTY',
+      fcf                  VARCHAR(20)  DEFAULT 'EMPTY',
+      roe                  VARCHAR(20)  DEFAULT 'EMPTY',
+      int_cov              VARCHAR(20)  DEFAULT 'EMPTY',
+      moat                 VARCHAR(20)  DEFAULT 'EMPTY',
+      net_margin           VARCHAR(20)  DEFAULT 'EMPTY',
+      has_dividends        VARCHAR(20)  DEFAULT 'EMPTY',
+      policy               VARCHAR(20)  DEFAULT 'EMPTY',
+      tech_risk            VARCHAR(20)  DEFAULT 'EMPTY',
+      mgmt_risk            VARCHAR(20)  DEFAULT 'EMPTY',
+      eps_value            DECIMAL(10,2),
+      growth_rate          DECIMAL(10,2),
+      expected_dividend    DECIMAL(10,2),
+      dividend_return_rate DECIMAL(6,4)  DEFAULT 0.04,
+      bvps                 DECIMAL(10,2),
+      discount_factor      DECIMAL(4,2)  DEFAULT 0.8,
+      notes                TEXT          DEFAULT ''
     )
   `;
+
+  // Ensure existing tables have all required columns (idempotent migrations)
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS eps                  VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS fcf                  VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS roe                  VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS int_cov              VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS moat                 VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS net_margin           VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS has_dividends        VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS policy               VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS tech_risk            VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS mgmt_risk            VARCHAR(20) DEFAULT 'EMPTY'`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS eps_value            DECIMAL(10,2)`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS growth_rate          DECIMAL(10,2)`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS expected_dividend    DECIMAL(10,2)`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS dividend_return_rate DECIMAL(6,4) DEFAULT 0.04`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS bvps                 DECIMAL(10,2)`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS discount_factor      DECIMAL(4,2) DEFAULT 0.8`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS notes                TEXT DEFAULT ''`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS notifications (
