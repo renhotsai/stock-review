@@ -239,19 +239,39 @@ export default function StockForm({ initialData, mode }: Props) {
 
       const { profile, metrics, annuals } = fin;
 
-      // Build new values from Yahoo Finance (factual data)
+      // Build new values from FMP data (factual data)
       const newValues: Partial<FormData> = {
-        name: profile?.name ?? '',
+        // Prefer FMP profile name; fall back to Yahoo Finance name from price API
+        name: profile?.name ?? priceData?.name ?? '',
         added_date: new Date().toISOString().split('T')[0],
       };
 
       if (metrics) {
-        if (metrics.eps != null) newValues.eps_value = String(metrics.eps);
-        if (metrics.bookValue != null && metrics.bookValue > 0) newValues.bvps = String(metrics.bookValue);
-        if (metrics.dividendYield != null && priceData?.price) {
+        // EPS: TTM from FMP; fall back to latest annual EPS
+        const epsVal = metrics.eps ?? annuals?.[0]?.eps ?? null;
+        if (epsVal != null) newValues.eps_value = String(epsVal);
+
+        // BVPS: only when positive (negative book value = buybacks, not meaningful)
+        if (metrics.bookValue != null && metrics.bookValue > 0)
+          newValues.bvps = String(metrics.bookValue);
+
+        // Annual dividend: prefer dividendRate ($ per share) over yield × price
+        if (metrics.dividendRate != null && metrics.dividendRate > 0) {
+          newValues.expected_dividend = metrics.dividendRate.toFixed(2);
+        } else if (metrics.dividendYield != null && priceData?.price) {
           const annualDiv = (priceData.price * metrics.dividendYield).toFixed(2);
           if (parseFloat(annualDiv) > 0) newValues.expected_dividend = annualDiv;
         }
+
+        // Unambiguous FACTS from data (AI will override with nuanced analysis)
+        const hasDividend =
+          (metrics.dividendRate != null ? metrics.dividendRate : metrics.dividendYield ?? 0) > 0;
+        newValues.has_dividends = hasDividend ? 'YES' : 'NO';
+      }
+
+      // FCF: positive latest annual free cash flow → YES
+      if (annuals && annuals.length > 0 && annuals[0].freeCashFlow != null) {
+        newValues.fcf = annuals[0].freeCashFlow > 0 ? 'YES' : 'NO';
       }
 
       // Phase 1: AI evaluation
