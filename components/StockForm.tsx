@@ -167,6 +167,7 @@ export default function StockForm({ initialData, mode }: Props) {
     watch,
     setValue,
     getValues,
+    reset,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(stockSchema),
@@ -229,30 +230,27 @@ export default function StockForm({ initialData, mode }: Props) {
         return;
       }
 
-      // Fill Yahoo Finance data
       const { profile, metrics, annuals } = fin;
 
-      if (profile?.name) setValue('name', profile.name);
+      // Build new values from Yahoo Finance (factual data)
+      const newValues: Partial<FormData> = {
+        name: profile?.name ?? '',
+        added_date: new Date().toISOString().split('T')[0],
+      };
 
-      // Auto-set today's date
-      setValue('added_date', new Date().toISOString().split('T')[0]);
-
-      // Fill valuation inputs from Yahoo Finance metrics (reliable factual data)
       if (metrics) {
-        if (metrics.eps != null)
-          setValue('eps_value', String(metrics.eps));
-        if (metrics.bookValue != null && metrics.bookValue > 0)
-          setValue('bvps', String(metrics.bookValue));
+        if (metrics.eps != null) newValues.eps_value = String(metrics.eps);
+        if (metrics.bookValue != null && metrics.bookValue > 0) newValues.bvps = String(metrics.bookValue);
         if (metrics.dividendYield != null && priceData?.price) {
           const annualDiv = (priceData.price * metrics.dividendYield).toFixed(2);
-          if (parseFloat(annualDiv) > 0) setValue('expected_dividend', annualDiv);
+          if (parseFloat(annualDiv) > 0) newValues.expected_dividend = annualDiv;
         }
       }
-
 
       // Phase 1: AI evaluation
       setProcessingPhase(1);
 
+      let aiOk = false;
       try {
         const aiRes = await fetch('/api/ai-evaluate', {
           method: 'POST',
@@ -261,37 +259,34 @@ export default function StockForm({ initialData, mode }: Props) {
         });
         if (aiRes.ok) {
           const ai = await aiRes.json();
-          if (ai.type && ['Growth', 'Dividends', 'Asset'].includes(ai.type))
-            setValue('type', ai.type, { shouldDirty: true });
-          if (ai.eps) setValue('eps', ai.eps, { shouldDirty: true });
-          if (ai.fcf) setValue('fcf', ai.fcf, { shouldDirty: true });
-          if (ai.roe) setValue('roe', ai.roe, { shouldDirty: true });
-          if (ai.int_cov) setValue('int_cov', ai.int_cov, { shouldDirty: true });
-          if (ai.moat) setValue('moat', ai.moat, { shouldDirty: true });
-          if (ai.net_margin) setValue('net_margin', ai.net_margin, { shouldDirty: true });
-          if (ai.has_dividends) setValue('has_dividends', ai.has_dividends, { shouldDirty: true });
-          if (ai.policy) setValue('policy', ai.policy, { shouldDirty: true });
-          if (ai.tech_risk) setValue('tech_risk', ai.tech_risk, { shouldDirty: true });
-          if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk, { shouldDirty: true });
-          // Valuation inputs from AI
-          if (ai.growth_rate != null) setValue('growth_rate', String(ai.growth_rate), { shouldDirty: true });
-          // AI fills gaps where Yahoo Finance returned nothing (use getValues for current state)
-          if (ai.eps_value != null && !getValues('eps_value')) setValue('eps_value', String(ai.eps_value), { shouldDirty: true });
-          if (ai.expected_dividend != null && !getValues('expected_dividend')) setValue('expected_dividend', String(ai.expected_dividend), { shouldDirty: true });
-          if (ai.bvps != null && !getValues('bvps')) setValue('bvps', String(ai.bvps), { shouldDirty: true });
-          setAiSuccess(true);
-        } else {
-          setAiSuccess(false);
+          if (ai.type && ['Growth', 'Dividends', 'Asset'].includes(ai.type)) newValues.type = ai.type;
+          if (ai.eps) newValues.eps = ai.eps;
+          if (ai.fcf) newValues.fcf = ai.fcf;
+          if (ai.roe) newValues.roe = ai.roe;
+          if (ai.int_cov) newValues.int_cov = ai.int_cov;
+          if (ai.moat) newValues.moat = ai.moat;
+          if (ai.net_margin) newValues.net_margin = ai.net_margin;
+          if (ai.has_dividends) newValues.has_dividends = ai.has_dividends;
+          if (ai.policy) newValues.policy = ai.policy;
+          if (ai.tech_risk) newValues.tech_risk = ai.tech_risk;
+          if (ai.mgmt_risk) newValues.mgmt_risk = ai.mgmt_risk;
+          if (ai.growth_rate != null) newValues.growth_rate = String(ai.growth_rate);
+          // AI fills gaps where Yahoo Finance returned nothing
+          if (ai.eps_value != null && !newValues.eps_value) newValues.eps_value = String(ai.eps_value);
+          if (ai.expected_dividend != null && !newValues.expected_dividend) newValues.expected_dividend = String(ai.expected_dividend);
+          if (ai.bvps != null && !newValues.bvps) newValues.bvps = String(ai.bvps);
+          aiOk = true;
         }
       } catch {
         // AI is best-effort, continue without it
-        setAiSuccess(false);
       }
 
-      // Phase 2: done
+      // Phase 2: apply all values at once via reset() to ensure DOM updates
       setProcessingPhase(2);
       await new Promise((r) => setTimeout(r, 600));
 
+      reset({ ...getValues(), ...newValues });
+      setAiSuccess(aiOk);
       setProcessing(false);
       setStep(2);
     } catch {
