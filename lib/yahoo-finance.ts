@@ -15,7 +15,10 @@ export type PriceResult = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getYf(): any {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('yahoo-finance2').default;
+  const yf = require('yahoo-finance2').default;
+  // Suppress data-usage notices that block requests on serverless environments
+  try { yf.suppressNotices(['yahooSurvey', 'ripHistorical']); } catch { /* ignore */ }
+  return yf;
 }
 
 export async function getStockPrice(symbol: string): Promise<PriceResult> {
@@ -28,7 +31,8 @@ export async function getStockPrice(symbol: string): Promise<PriceResult> {
       price: quote?.regularMarketPrice ?? null,
       name: quote?.longName ?? quote?.shortName ?? null,
     };
-  } catch {
+  } catch (error) {
+    console.error(`[yahoo-finance] getStockPrice(${symbol}) failed:`, error);
     return { symbol, price: null, name: null };
   }
 }
@@ -46,7 +50,7 @@ export async function getCompanyProfile(ticker: string): Promise<CompanyProfile 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [quote, summaryDetail]: [any, any] = await Promise.all([
       yf.quote(ticker),
-      yf.quoteSummary(ticker, { modules: ['assetProfile', 'summaryDetail', 'price'] }),
+      yf.quoteSummary(ticker, { modules: ['assetProfile', 'summaryDetail', 'price'], validateResult: false }),
     ]);
 
     const profile = summaryDetail?.assetProfile ?? {};
@@ -66,7 +70,8 @@ export async function getCompanyProfile(ticker: string): Promise<CompanyProfile 
       marketCap: price?.marketCap ?? quote?.marketCap ?? null,
       logo: `https://logo.clearbit.com/${(profile?.website ?? '').replace(/https?:\/\//, '').split('/')[0]}`,
     };
-  } catch {
+  } catch (error) {
+    console.error(`[yahoo-finance] getCompanyProfile(${ticker}) failed:`, error);
     return null;
   }
 }
@@ -82,6 +87,7 @@ export async function getKeyMetrics(ticker: string): Promise<KeyMetrics | null> 
         'financialData',
         'price',
       ],
+      validateResult: false,
     });
 
     const sd = summary?.summaryDetail ?? {};
@@ -111,7 +117,8 @@ export async function getKeyMetrics(ticker: string): Promise<KeyMetrics | null> 
       fiftyTwoWeekLow: price?.fiftyTwoWeekLow?.raw ?? sd?.fiftyTwoWeekLow ?? null,
       averageVolume: sd?.averageVolume?.raw ?? sd?.averageVolume ?? null,
     };
-  } catch {
+  } catch (error) {
+    console.error(`[yahoo-finance] getKeyMetrics(${ticker}) failed:`, error);
     return null;
   }
 }
@@ -122,6 +129,7 @@ export async function getAnnualFinancials(ticker: string): Promise<AnnualFinanci
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const summary: any = await yf.quoteSummary(ticker, {
       modules: ['incomeStatementHistory', 'cashflowStatementHistory'],
+      validateResult: false,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -159,7 +167,8 @@ export async function getAnnualFinancials(ticker: string): Promise<AnnualFinanci
         netMargin: revenue && netIncome ? netIncome / revenue : null,
       } as AnnualFinancial;
     });
-  } catch {
+  } catch (error) {
+    console.error(`[yahoo-finance] getAnnualFinancials(${ticker}) failed:`, error);
     return [];
   }
 }
@@ -196,7 +205,8 @@ export async function getDividendHistory(ticker: string): Promise<DividendRecord
         year: new Date(date).getFullYear(),
       };
     }).filter((d: DividendRecord) => d.amount > 0);
-  } catch {
+  } catch (error) {
+    console.error(`[yahoo-finance] getDividendHistory(${ticker}) failed:`, error);
     return [];
   }
 }
@@ -226,7 +236,8 @@ export async function getPriceHistory(
       low: p.low ?? null,
       volume: p.volume ?? null,
     }));
-  } catch {
+  } catch (error) {
+    console.error(`[yahoo-finance] getPriceHistory(${ticker}) failed:`, error);
     return [];
   }
 }

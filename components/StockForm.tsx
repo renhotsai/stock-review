@@ -256,7 +256,7 @@ export default function StockForm({ initialData, mode }: Props) {
         const aiRes = await fetch('/api/ai-evaluate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profile, metrics, annuals, price: priceData?.price ?? null }),
+          body: JSON.stringify({ symbol }),
         });
         if (aiRes.ok) {
           const ai = await aiRes.json();
