@@ -12,19 +12,26 @@ export type PriceResult = {
   name: string | null;
 };
 
+// Cached instance — avoids re-importing on every request
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getYf(): any {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { YahooFinance } = require('yahoo-finance2');
-  const yf = new YahooFinance();
-  // Suppress data-usage notices that block requests on serverless environments
-  try { yf.suppressNotices(['yahooSurvey', 'ripHistorical']); } catch { /* ignore */ }
-  return yf;
+let _yf: any = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getYf(): Promise<any> {
+  if (_yf) return _yf;
+  // Dynamic import handles ESM-only packages (yahoo-finance2 v3) in Next.js
+  const mod = await import('yahoo-finance2');
+  // v3 exports { YahooFinance }; fall back to .default for any compatibility shim
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Ctor: any = (mod as any).YahooFinance ?? (mod as any).default;
+  _yf = typeof Ctor === 'function' ? new Ctor() : Ctor;
+  try { _yf.suppressNotices(['yahooSurvey', 'ripHistorical']); } catch { /* ignore */ }
+  return _yf;
 }
 
 export async function getStockPrice(symbol: string): Promise<PriceResult> {
   try {
-    const yf = getYf();
+    const yf = await getYf();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const quote: any = await yf.quote(symbol);
     return {
@@ -47,7 +54,7 @@ export async function getStockPrices(symbols: string[]): Promise<PriceResult[]> 
 
 export async function getCompanyProfile(ticker: string): Promise<CompanyProfile | null> {
   try {
-    const yf = getYf();
+    const yf = await getYf();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [quote, summaryDetail]: [any, any] = await Promise.all([
       yf.quote(ticker),
@@ -79,7 +86,7 @@ export async function getCompanyProfile(ticker: string): Promise<CompanyProfile 
 
 export async function getKeyMetrics(ticker: string): Promise<KeyMetrics | null> {
   try {
-    const yf = getYf();
+    const yf = await getYf();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const summary: any = await yf.quoteSummary(ticker, {
       modules: [
@@ -126,7 +133,7 @@ export async function getKeyMetrics(ticker: string): Promise<KeyMetrics | null> 
 
 export async function getAnnualFinancials(ticker: string): Promise<AnnualFinancial[]> {
   try {
-    const yf = getYf();
+    const yf = await getYf();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const summary: any = await yf.quoteSummary(ticker, {
       modules: ['incomeStatementHistory', 'cashflowStatementHistory'],
@@ -187,7 +194,7 @@ const periodMap: Record<PeriodOption, { period1: string; interval: string }> = {
 
 export async function getDividendHistory(ticker: string): Promise<DividendRecord[]> {
   try {
-    const yf = getYf();
+    const yf = await getYf();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await yf.historical(ticker, {
       period1: new Date(Date.now() - 10 * 365 * 86400000).toISOString().split('T')[0],
@@ -217,7 +224,7 @@ export async function getPriceHistory(
   period: PeriodOption = '1Y'
 ): Promise<PricePoint[]> {
   try {
-    const yf = getYf();
+    const yf = await getYf();
     const { period1, interval } = periodMap[period];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await yf.historical(ticker, {
