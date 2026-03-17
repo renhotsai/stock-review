@@ -281,11 +281,35 @@ export default function StockForm({ initialData, mode }: Props) {
         // AI is best-effort, continue without it
       }
 
-      // Phase 2: apply all values at once via reset() to ensure DOM updates
+      // Phase 2: apply all values at once via reset() to ensure DOM updates.
+      // Start from clean defaults so a second lookup never inherits a previous stock's data.
       setProcessingPhase(2);
       await new Promise((r) => setTimeout(r, 600));
 
-      reset({ ...getValues(), ...newValues });
+      const cleanDefaults: FormData = {
+        symbol: getValues('symbol'),
+        name: '',
+        type: 'Dividends',
+        added_date: '',
+        eps: 'EMPTY',
+        fcf: 'EMPTY',
+        roe: 'EMPTY',
+        int_cov: 'EMPTY',
+        moat: 'EMPTY',
+        net_margin: 'EMPTY',
+        has_dividends: 'EMPTY',
+        policy: 'EMPTY',
+        tech_risk: 'EMPTY',
+        mgmt_risk: 'EMPTY',
+        eps_value: '',
+        growth_rate: '',
+        expected_dividend: '',
+        dividend_return_rate: '0.04',
+        bvps: '',
+        discount_factor: '0.8',
+        notes: '',
+      };
+      reset({ ...cleanDefaults, ...newValues });
       setAiSuccess(aiOk);
       setProcessing(false);
       setStep(2);
