@@ -28,7 +28,9 @@ export async function GET(
           fetchedAt: new Date().toISOString(),
         };
       },
-      1 // 1 day TTL
+      1, // 1 day TTL
+      // Only treat cache as valid if we actually got real data
+      (d) => d.metrics !== null || d.profile !== null
     );
 
     return NextResponse.json(data);
