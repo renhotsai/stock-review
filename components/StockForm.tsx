@@ -159,6 +159,7 @@ export default function StockForm({ initialData, mode }: Props) {
   const [processing, setProcessing] = useState(false);
   const [processingPhase, setProcessingPhase] = useState(0);
   const [fetchError, setFetchError] = useState('');
+  const [aiSuccess, setAiSuccess] = useState<boolean | null>(null);
 
   const {
     register,
@@ -261,26 +262,30 @@ export default function StockForm({ initialData, mode }: Props) {
         if (aiRes.ok) {
           const ai = await aiRes.json();
           if (ai.type && ['Growth', 'Dividends', 'Asset'].includes(ai.type))
-            setValue('type', ai.type);
-          if (ai.eps) setValue('eps', ai.eps);
-          if (ai.fcf) setValue('fcf', ai.fcf);
-          if (ai.roe) setValue('roe', ai.roe);
-          if (ai.int_cov) setValue('int_cov', ai.int_cov);
-          if (ai.moat) setValue('moat', ai.moat);
-          if (ai.net_margin) setValue('net_margin', ai.net_margin);
-          if (ai.has_dividends) setValue('has_dividends', ai.has_dividends);
-          if (ai.policy) setValue('policy', ai.policy);
-          if (ai.tech_risk) setValue('tech_risk', ai.tech_risk);
-          if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk);
+            setValue('type', ai.type, { shouldDirty: true });
+          if (ai.eps) setValue('eps', ai.eps, { shouldDirty: true });
+          if (ai.fcf) setValue('fcf', ai.fcf, { shouldDirty: true });
+          if (ai.roe) setValue('roe', ai.roe, { shouldDirty: true });
+          if (ai.int_cov) setValue('int_cov', ai.int_cov, { shouldDirty: true });
+          if (ai.moat) setValue('moat', ai.moat, { shouldDirty: true });
+          if (ai.net_margin) setValue('net_margin', ai.net_margin, { shouldDirty: true });
+          if (ai.has_dividends) setValue('has_dividends', ai.has_dividends, { shouldDirty: true });
+          if (ai.policy) setValue('policy', ai.policy, { shouldDirty: true });
+          if (ai.tech_risk) setValue('tech_risk', ai.tech_risk, { shouldDirty: true });
+          if (ai.mgmt_risk) setValue('mgmt_risk', ai.mgmt_risk, { shouldDirty: true });
           // Valuation inputs from AI
-          if (ai.growth_rate != null) setValue('growth_rate', String(ai.growth_rate));
+          if (ai.growth_rate != null) setValue('growth_rate', String(ai.growth_rate), { shouldDirty: true });
           // AI fills gaps where Yahoo Finance returned nothing (use getValues for current state)
-          if (ai.eps_value != null && !getValues('eps_value')) setValue('eps_value', String(ai.eps_value));
-          if (ai.expected_dividend != null && !getValues('expected_dividend')) setValue('expected_dividend', String(ai.expected_dividend));
-          if (ai.bvps != null && !getValues('bvps')) setValue('bvps', String(ai.bvps));
+          if (ai.eps_value != null && !getValues('eps_value')) setValue('eps_value', String(ai.eps_value), { shouldDirty: true });
+          if (ai.expected_dividend != null && !getValues('expected_dividend')) setValue('expected_dividend', String(ai.expected_dividend), { shouldDirty: true });
+          if (ai.bvps != null && !getValues('bvps')) setValue('bvps', String(ai.bvps), { shouldDirty: true });
+          setAiSuccess(true);
+        } else {
+          setAiSuccess(false);
         }
       } catch {
         // AI is best-effort, continue without it
+        setAiSuccess(false);
       }
 
       // Phase 2: done
@@ -451,11 +456,27 @@ export default function StockForm({ initialData, mode }: Props) {
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-800">F.A.C.T.S 評估標準</h2>
-              {mode === 'create' && (
-                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                  {watchedData.name || watchedData.symbol} · {watchedData.type}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {aiSuccess === true && (
+                  <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">✓ AI 已填入</span>
+                )}
+                {aiSuccess === false && (
+                  <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded">⚠ AI 未能評估，請手動填寫</span>
+                )}
+                {mode === 'create' && watchedData.name && (
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">{watchedData.name}</span>
+                )}
+              </div>
+            </div>
+            {/* Stock type selector */}
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">股票類型</span>
+              <select {...register('type')} className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="Growth">Growth 成長股</option>
+                <option value="Dividends">Dividends 股息股</option>
+                <option value="Asset">Asset 資產股</option>
+              </select>
+              <span className="text-xs text-gray-400">影響估值方式</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {FACTS_FIELDS.map((field) => (
