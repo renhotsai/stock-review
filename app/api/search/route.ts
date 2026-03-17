@@ -8,7 +8,9 @@ async function getYf(): Promise<any> {
   const mod = await import('yahoo-finance2');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Ctor: any = (mod as any).YahooFinance ?? (mod as any).default;
-  _yf = typeof Ctor === 'function' ? new Ctor() : Ctor;
+  _yf = typeof Ctor === 'function'
+    ? new Ctor({ suppressNotices: ['yahooSurvey', 'ripHistorical'] })
+    : Ctor;
   return _yf;
 }
 

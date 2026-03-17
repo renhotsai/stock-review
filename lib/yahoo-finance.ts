@@ -24,8 +24,9 @@ async function getYf(): Promise<any> {
   // v3 exports { YahooFinance }; fall back to .default for any compatibility shim
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Ctor: any = (mod as any).YahooFinance ?? (mod as any).default;
-  _yf = typeof Ctor === 'function' ? new Ctor() : Ctor;
-  try { _yf.suppressNotices(['yahooSurvey', 'ripHistorical']); } catch { /* ignore */ }
+  _yf = typeof Ctor === 'function'
+    ? new Ctor({ suppressNotices: ['yahooSurvey', 'ripHistorical'] })
+    : Ctor;
   return _yf;
 }
 
