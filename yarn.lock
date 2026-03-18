@@ -7,18 +7,6 @@
   resolved "https://registry.yarnpkg.com/@alloc/quick-lru/-/quick-lru-5.2.0.tgz#7bf68b20c0a350f936915fcae06f58e32007ce30"
   integrity sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==
 
-"@anthropic-ai/sdk@^0.79.0":
-  version "0.79.0"
-  resolved "https://registry.yarnpkg.com/@anthropic-ai/sdk/-/sdk-0.79.0.tgz#cf48fffe0f1074f58427cc343050d8409dea218e"
-  integrity sha512-ietmtM6glcnnrWq26H+BZm8J07iay9Cob6hRzDTr/A9QWF1m2T//TQhFO4MTKcZht2/7LS8bG9wUYEhcizKRnA==
-  dependencies:
-    json-schema-to-ts "^3.1.1"
-
-"@babel/runtime@^7.18.3":
-  version "7.29.2"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.29.2.tgz#9a6e2d05f4b6692e1801cd4fb176ad823930ed5e"
-  integrity sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==
-
 "@deno/shim-deno-test@^0.5.0":
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/@deno/shim-deno-test/-/shim-deno-test-0.5.0.tgz#7d5dd221c736d182e587b8fd9bfca49b4dc0aa79"
@@ -683,14 +671,6 @@ jiti@^2.6.1:
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
   integrity sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==
 
-json-schema-to-ts@^3.1.1:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/json-schema-to-ts/-/json-schema-to-ts-3.1.1.tgz#81f3acaf5a34736492f6f5f51870ef9ece1ca853"
-  integrity sha512-+DWg8jCJG2TEnpy7kOm/7/AxaYoaRbjVB4LFZLySZlWn8exGs3A4OLJR966cVvU26N7X9TWxl+Jsw7dzAqKT6g==
-  dependencies:
-    "@babel/runtime" "^7.18.3"
-    ts-algebra "^2.0.0"
-
 json-schema@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/json-schema/-/json-schema-0.4.0.tgz#f7de4cf6efab838ebaeb3236474cbba5a1930ab5"
@@ -1117,11 +1097,6 @@ trim-repeated@^1.0.0:
   integrity sha512-pkonvlKk8/ZuR0D5tLW8ljt5I8kmxp2XKymhepUeOdCEfKpZaktSArkLHZt76OB1ZvO9bssUsDty4SWhLvZpLg==
   dependencies:
     escape-string-regexp "^1.0.2"
-
-ts-algebra@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/ts-algebra/-/ts-algebra-2.0.0.tgz#4e3e0953878f26518fce7f6bb115064a65388b7a"
-  integrity sha512-FPAhNPFMrkwz76P7cdjdmiShwMynZYN6SgOujD1urY4oNm80Ou9oMdmbR45LotcKOXoy7wSmHkRFE6Mxbrhefw==
 
 tslib@^2.4.0, tslib@^2.8.1:
   version "2.8.1"

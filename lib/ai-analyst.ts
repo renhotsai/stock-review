@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import type { StockAIPayload, StockType } from '@/types/stock';
 
 // ── Sanitizer ─────────────────────────────────────────────────────────────────
@@ -71,11 +71,8 @@ function buildPrompt(ticker: string, type: StockType): string {
 
   return `You are a professional stock research analyst. Analyze the stock ${ticker} (type: ${type}).
 
-Use web_search to look up:
-1. Today's current market price for ${ticker}
-2. The latest financial data needed for ${type} valuation:
+Fill in ALL fields using your knowledge of this company's financials. For ${type} valuation, provide:
 ${typeInstructions[type]}
-3. Qualitative factors for the F.A.C.T.S framework
 
 Today's date: ${new Date().toISOString().split('T')[0]}
 
@@ -83,7 +80,7 @@ Return ONLY a valid JSON object with exactly these fields:
 
 {
   "name": "Full company name",
-  "currentPrice": <number>,
+  "currentPrice": <number — most recent price you know>,
   "currency": "USD",
 
   "eps_value": <number or null>,
@@ -104,9 +101,9 @@ Return ONLY a valid JSON object with exactly these fields:
   "tech_risk":    "LOW" | "MEDIUM" | "HIGH" | "EMPTY",
   "mgmt_risk":    "LOW" | "MEDIUM" | "HIGH" | "EMPTY",
 
-  "notes": "brief explanation of key data sources and valuation rationale",
+  "notes": "brief explanation of valuation rationale and key facts",
   "dataSource": "e.g. FY2024 10-K / Q3 2024 10-Q",
-  "priceAsOf": "YYYY-MM-DD",
+  "priceAsOf": "YYYY-MM-DD — date your price data is from",
   "confidence": "High" | "Medium" | "Low"
 }
 
@@ -118,65 +115,35 @@ Rules:
 - moat: TWO_MOATS if brand + another advantage; ONE_MOAT if one clear advantage; NO otherwise
 - net_margin: ABOVE_20 if >20%; ABOVE_10 if >10%; INCREASING if growing YoY; NO otherwise
 - policy: YES if shareholder-friendly (buybacks, dividends, low dilution)
-- tech_risk: LOW/MEDIUM/HIGH based on disruption risk
-- mgmt_risk: LOW/MEDIUM/HIGH based on governance, stability
-- confidence: High if data is within 3 months; Medium if 3–12 months; Low if >12 months or uncertain
+- tech_risk / mgmt_risk: LOW / MEDIUM / HIGH
+- confidence: High if data is recent (within ~6 months); Medium if 6–18 months; Low if older or uncertain
 - Only return JSON, no markdown, no extra text`;
 }
 
 // ── Main function ──────────────────────────────────────────────────────────────
 
 export async function analyzeStock(ticker: string, type: StockType): Promise<StockAIPayload> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY is not configured');
+    throw new Error('OPENAI_API_KEY is not configured');
   }
 
-  const client = new Anthropic({ apiKey });
+  const openai = new OpenAI({ apiKey });
   const prompt = buildPrompt(ticker.toUpperCase(), type);
 
-  const messages: Anthropic.MessageParam[] = [
-    { role: 'user', content: prompt },
-  ];
-
-  const tools = [{ type: 'web_search_20260209', name: 'web_search' }] as Anthropic.Messages.ToolUnion[];
-
-  // web_search is a server-side tool — the API handles searches internally.
-  // We only need to handle pause_turn (server hit its sampling limit) by resuming.
-  let response = await client.messages.create({
-    model: 'claude-opus-4-6',
-    max_tokens: 4096,
-    tools,
-    messages,
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a financial analyst. Always respond with valid JSON only, no markdown or extra text.',
+      },
+      { role: 'user', content: prompt },
+    ],
+    response_format: { type: 'json_object' },
+    temperature: 0.1,
   });
 
-  const MAX_CONTINUATIONS = 5;
-  let continuations = 0;
-  while (response.stop_reason === 'pause_turn' && continuations < MAX_CONTINUATIONS) {
-    messages.push({ role: 'assistant', content: response.content });
-    response = await client.messages.create({
-      model: 'claude-opus-4-6',
-      max_tokens: 4096,
-      tools,
-      messages,
-    });
-    continuations++;
-  }
-
-  // Extract JSON from the final text response
-  const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
-  if (!textBlock) {
-    throw new Error('No text response from AI');
-  }
-
-  // Parse JSON (strip any accidental markdown fences)
-  const jsonText = textBlock.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  let raw: Record<string, unknown>;
-  try {
-    raw = JSON.parse(jsonText) as Record<string, unknown>;
-  } catch {
-    throw new Error(`Failed to parse AI response as JSON: ${textBlock.text.slice(0, 200)}`);
-  }
-
+  const raw = JSON.parse(completion.choices[0].message.content ?? '{}') as Record<string, unknown>;
   return sanitizePayload(raw, ticker, type);
 }
