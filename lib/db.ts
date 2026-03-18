@@ -61,6 +61,10 @@ export interface Stock {
   bvps: number | null;
   discount_factor: number;
   notes: string;
+  // AI metadata
+  data_source: string | null;
+  price_as_of: string | null;
+  ai_confidence: string | null;
 }
 
 export type Notification = {
@@ -162,6 +166,9 @@ export async function setupDatabase() {
   await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS bvps                 DECIMAL(10,2)`;
   await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS discount_factor      DECIMAL(4,2) DEFAULT 0.8`;
   await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS notes                TEXT DEFAULT ''`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS data_source          VARCHAR(200) DEFAULT ''`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS price_as_of          DATE`;
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS ai_confidence        VARCHAR(10) DEFAULT 'Low'`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS notifications (

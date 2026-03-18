@@ -143,12 +143,7 @@ function stockToFormPreview(data: FormData): Partial<Stock> {
   } as Partial<Stock>;
 }
 
-// ── Processing phases ─────────────────────────────────────────
-const PHASES = [
-  { icon: '📡', text: '正在取得公司財務資料…' },
-  { icon: '🤖', text: 'AI 正在評估 F.A.C.T.S…' },
-  { icon: '✅', text: '資料已就緒，即將進入評估畫面' },
-];
+import type { StockAIPayload } from '@/types/stock';
 
 // ── Component ─────────────────────────────────────────────────
 export default function StockForm({ initialData, mode }: Props) {
@@ -157,9 +152,8 @@ export default function StockForm({ initialData, mode }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [processingPhase, setProcessingPhase] = useState(0);
   const [fetchError, setFetchError] = useState('');
-  const [aiSuccess, setAiSuccess] = useState<boolean | null>(null);
+  const [aiPayload, setAiPayload] = useState<StockAIPayload | null>(null);
 
   const {
     register,
@@ -210,104 +204,66 @@ export default function StockForm({ initialData, mode }: Props) {
 
   async function handleLookup() {
     const symbol = watchedData.symbol.trim().toUpperCase();
+    const type = watchedData.type;
     if (!symbol) return;
 
     setFetchError('');
     setProcessing(true);
-    setProcessingPhase(0);
+    setAiPayload(null);
 
     try {
-      // Phase 0: fetch FMP financials
-      const finRes = await fetch(`/api/financials/${symbol}`);
-      const fin = finRes.ok ? await finRes.json() : null;
+      const res = await fetch('/api/stocks/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: symbol, type }),
+      });
 
-      if (!fin) {
-        setFetchError('找不到此股票代號，請確認後再試');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setFetchError(errData.error ?? '查詢失敗，請稍後再試');
         setProcessing(false);
         return;
       }
 
-      if (!fin.profile && !fin.metrics && (!fin.annuals || fin.annuals.length === 0)) {
-        setFetchError('無法取得股票資料，請稍後再試或確認代號是否正確');
-        setProcessing(false);
-        return;
-      }
+      const ai: StockAIPayload = await res.json();
+      setAiPayload(ai);
 
-      // Phase 1: AI analyses ALL financial data and fills in the complete form
-      setProcessingPhase(1);
-
-      let aiOk = false;
       const newValues: Partial<FormData> = {
+        name: ai.name ?? symbol,
+        type: ai.type ?? type,
         added_date: new Date().toISOString().split('T')[0],
+        eps: ai.eps,
+        fcf: ai.fcf,
+        roe: ai.roe,
+        int_cov: ai.int_cov,
+        moat: ai.moat,
+        net_margin: ai.net_margin,
+        has_dividends: ai.has_dividends,
+        policy: ai.policy,
+        tech_risk: ai.tech_risk,
+        mgmt_risk: ai.mgmt_risk,
+        notes: ai.notes ?? '',
       };
-
-      try {
-        const aiRes = await fetch('/api/ai-evaluate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol, financials: fin }),
-        });
-
-        if (aiRes.ok) {
-          const ai = await aiRes.json();
-
-          // Apply ALL fields returned by AI
-          if (ai.name)        newValues.name        = ai.name;
-          if (ai.type && ['Growth', 'Dividends', 'Asset'].includes(ai.type))
-                              newValues.type        = ai.type;
-          if (ai.eps)         newValues.eps         = ai.eps;
-          if (ai.fcf)         newValues.fcf         = ai.fcf;
-          if (ai.roe)         newValues.roe         = ai.roe;
-          if (ai.int_cov)     newValues.int_cov     = ai.int_cov;
-          if (ai.moat)        newValues.moat        = ai.moat;
-          if (ai.net_margin)  newValues.net_margin  = ai.net_margin;
-          if (ai.has_dividends) newValues.has_dividends = ai.has_dividends;
-          if (ai.policy)      newValues.policy      = ai.policy;
-          if (ai.tech_risk)   newValues.tech_risk   = ai.tech_risk;
-          if (ai.mgmt_risk)   newValues.mgmt_risk   = ai.mgmt_risk;
-
-          if (ai.eps_value          != null) newValues.eps_value          = String(ai.eps_value);
-          if (ai.growth_rate        != null) newValues.growth_rate        = String(ai.growth_rate);
-          if (ai.expected_dividend  != null) newValues.expected_dividend  = String(ai.expected_dividend);
-          if (ai.dividend_return_rate != null) newValues.dividend_return_rate = String(ai.dividend_return_rate);
-          if (ai.bvps               != null) newValues.bvps               = String(ai.bvps);
-          if (ai.discount_factor    != null) newValues.discount_factor    = String(ai.discount_factor);
-
-          aiOk = true;
-        }
-      } catch {
-        // AI is best-effort; form will show with empty fields for manual entry
-      }
-
-      // Phase 2: apply all values via reset() and advance to review step
-      setProcessingPhase(2);
-      await new Promise((r) => setTimeout(r, 500));
+      if (ai.eps_value          != null) newValues.eps_value          = String(ai.eps_value);
+      if (ai.growth_rate        != null) newValues.growth_rate        = String(ai.growth_rate);
+      if (ai.expected_dividend  != null) newValues.expected_dividend  = String(ai.expected_dividend);
+      if (ai.dividend_return_rate != null) newValues.dividend_return_rate = String(ai.dividend_return_rate);
+      if (ai.bvps               != null) newValues.bvps               = String(ai.bvps);
+      if (ai.discount_factor    != null) newValues.discount_factor    = String(ai.discount_factor);
 
       const cleanDefaults: FormData = {
         symbol: getValues('symbol'),
-        name: fin.profile?.name ?? '',
-        type: 'Dividends',
+        name: '',
+        type,
         added_date: '',
-        eps: 'EMPTY',
-        fcf: 'EMPTY',
-        roe: 'EMPTY',
-        int_cov: 'EMPTY',
-        moat: 'EMPTY',
-        net_margin: 'EMPTY',
-        has_dividends: 'EMPTY',
-        policy: 'EMPTY',
-        tech_risk: 'EMPTY',
-        mgmt_risk: 'EMPTY',
-        eps_value: '',
-        growth_rate: '',
-        expected_dividend: '',
-        dividend_return_rate: '0.04',
-        bvps: '',
-        discount_factor: '0.8',
+        eps: 'EMPTY', fcf: 'EMPTY', roe: 'EMPTY', int_cov: 'EMPTY',
+        moat: 'EMPTY', net_margin: 'EMPTY', has_dividends: 'EMPTY',
+        policy: 'EMPTY', tech_risk: 'EMPTY', mgmt_risk: 'EMPTY',
+        eps_value: '', growth_rate: '', expected_dividend: '',
+        dividend_return_rate: '0.04', bvps: '', discount_factor: '0.8',
         notes: '',
       };
       reset({ ...cleanDefaults, ...newValues });
-      setAiSuccess(aiOk);
       setProcessing(false);
       setStep(2);
     } catch {
@@ -345,6 +301,9 @@ export default function StockForm({ initialData, mode }: Props) {
       entry_price: preview?.fairValue ?? null,
       review_price: preview?.reviewValue ?? null,
       score: preview?.score ?? 0,
+      data_source: aiPayload?.dataSource ?? null,
+      price_as_of: aiPayload?.priceAsOf ?? null,
+      ai_confidence: aiPayload?.confidence ?? null,
     };
 
     try {
@@ -412,9 +371,9 @@ export default function StockForm({ initialData, mode }: Props) {
               <div className="flex flex-col items-center py-8 gap-6">
                 <div className="text-center">
                   <h2 className="text-lg font-semibold text-gray-800">輸入股票代號</h2>
-                  <p className="text-sm text-gray-500 mt-1">系統將自動查詢所有資料</p>
+                  <p className="text-sm text-gray-500 mt-1">AI 將自動查詢所有財務數據</p>
                 </div>
-                <div className="w-full max-w-xs">
+                <div className="w-full max-w-xs space-y-3">
                   <input
                     {...register('symbol')}
                     placeholder="e.g. AAPL, KO, MSFT"
@@ -423,44 +382,43 @@ export default function StockForm({ initialData, mode }: Props) {
                   />
                   {errors.symbol && <p className="text-red-500 text-xs mt-1 text-center">{errors.symbol.message}</p>}
                   {fetchError && <p className="text-red-500 text-xs mt-1 text-center">{fetchError}</p>}
+                  {/* Type selector — required before AI analysis */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1 text-center">股票類型</label>
+                    <Controller
+                      name="type"
+                      control={control}
+                      render={({ field }) => (
+                        <select {...field} className={`${selectClass} text-center`}>
+                          <option value="Growth">Growth 成長股</option>
+                          <option value="Dividends">Dividends 股息股</option>
+                          <option value="Asset">Asset 資產股</option>
+                        </select>
+                      )}
+                    />
+                    <p className="text-xs text-gray-400 mt-1 text-center">AI 將根據類型查詢對應數據</p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleLookup}
                   className="bg-blue-600 text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
-                  查詢股票 →
+                  AI 分析 →
                 </button>
               </div>
             ) : (
               /* Processing screen */
-              <div className="flex flex-col items-center py-10 gap-6">
+              <div className="flex flex-col items-center py-12 gap-4">
                 <div className="text-center">
                   <p className="text-base font-semibold text-gray-700">
-                    {watchedData.symbol.toUpperCase()}
+                    {watchedData.symbol.toUpperCase()} · {watchedData.type}
                   </p>
-                  <p className="text-sm text-gray-400 mt-0.5">正在分析股票資料</p>
+                  <p className="text-sm text-gray-400 mt-0.5">AI 正在查詢財務數據及分析中…</p>
                 </div>
-                <div className="w-full max-w-sm space-y-3">
-                  {PHASES.map((phase, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                        i < processingPhase
-                          ? 'bg-green-50 text-green-700'
-                          : i === processingPhase
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'bg-gray-50 text-gray-400'
-                      }`}
-                    >
-                      <span className="text-lg">
-                        {i < processingPhase ? '✅' : i === processingPhase ? (
-                          <span className="inline-block animate-spin">⏳</span>
-                        ) : '○'}
-                      </span>
-                      <span className="text-sm font-medium">{phase.text}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-3 text-blue-600">
+                  <span className="inline-block animate-spin text-2xl">⏳</span>
+                  <span className="text-sm">這可能需要 15–30 秒</span>
                 </div>
               </div>
             )}
@@ -473,17 +431,47 @@ export default function StockForm({ initialData, mode }: Props) {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-800">F.A.C.T.S 評估標準</h2>
               <div className="flex items-center gap-2">
-                {aiSuccess === true && (
-                  <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">✓ AI 已填入</span>
-                )}
-                {aiSuccess === false && (
-                  <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded">⚠ AI 未能評估，請手動填寫</span>
+                {aiPayload && (
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    aiPayload.confidence === 'High'   ? 'text-green-700 bg-green-50' :
+                    aiPayload.confidence === 'Medium' ? 'text-yellow-700 bg-yellow-50' :
+                                                        'text-orange-700 bg-orange-50'
+                  }`}>
+                    {aiPayload.confidence === 'High' ? '✓ 高信心' :
+                     aiPayload.confidence === 'Medium' ? '～ 中信心' : '⚠ 低信心'}
+                  </span>
                 )}
                 {mode === 'create' && watchedData.name && (
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">{watchedData.name}</span>
                 )}
               </div>
             </div>
+            {/* AI price info banner */}
+            {aiPayload && mode === 'create' && (
+              <div className={`mb-4 p-3 rounded-lg text-sm ${
+                aiPayload.confidence === 'Low'
+                  ? 'bg-orange-50 border border-orange-200 text-orange-700'
+                  : 'bg-blue-50 border border-blue-200 text-blue-700'
+              }`}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span>
+                    {aiPayload.currentPrice != null
+                      ? `📈 AI 查詢股價：${aiPayload.currency} ${aiPayload.currentPrice.toFixed(2)} （${aiPayload.priceAsOf}）`
+                      : '股價未能取得'}
+                  </span>
+                  {aiPayload.confidence === 'Low' && (
+                    <span className="text-xs font-medium">⚠ 數據可能超過 12 個月，建議人工核實</span>
+                  )}
+                </div>
+                {/* Price staleness warning */}
+                {aiPayload.priceAsOf && (() => {
+                  const days = Math.floor((Date.now() - new Date(aiPayload.priceAsOf).getTime()) / 86400000);
+                  return days > 3 ? (
+                    <p className="mt-1 text-xs text-orange-600">⚠ 股價已有 {days} 天未更新，建議重新分析</p>
+                  ) : null;
+                })()}
+              </div>
+            )}
             {/* Stock type selector */}
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">股票類型</span>
@@ -523,7 +511,7 @@ export default function StockForm({ initialData, mode }: Props) {
               {mode === 'create' ? (
                 <button
                   type="button"
-                  onClick={() => { setStep(1); setProcessing(false); }}
+                  onClick={() => { setStep(1); setProcessing(false); setAiPayload(null); }}
                   className="px-6 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   ← 重新查詢

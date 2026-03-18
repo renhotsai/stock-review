@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       symbol, name, type, score, entry_price, review_price, added_date,
       eps, fcf, roe, int_cov, moat, net_margin, has_dividends, policy, tech_risk, mgmt_risk,
       eps_value, growth_rate, expected_dividend, dividend_return_rate, bvps, discount_factor, notes,
+      data_source, price_as_of, ai_confidence,
     } = body;
 
     if (!symbol) {
@@ -30,7 +31,8 @@ export async function POST(request: Request) {
       INSERT INTO stocks (
         symbol, name, type, score, entry_price, review_price, added_date,
         eps, fcf, roe, int_cov, moat, net_margin, has_dividends, policy, tech_risk, mgmt_risk,
-        eps_value, growth_rate, expected_dividend, dividend_return_rate, bvps, discount_factor, notes
+        eps_value, growth_rate, expected_dividend, dividend_return_rate, bvps, discount_factor, notes,
+        data_source, price_as_of, ai_confidence
       )
       VALUES (
         ${symbol.toUpperCase()},
@@ -56,7 +58,10 @@ export async function POST(request: Request) {
         ${dividend_return_rate ?? 0.04},
         ${bvps ?? null},
         ${discount_factor ?? 0.8},
-        ${notes ?? ''}
+        ${notes ?? ''},
+        ${data_source ?? null},
+        ${price_as_of ?? null},
+        ${ai_confidence ?? 'Low'}
       )
       ON CONFLICT (symbol) DO UPDATE SET
         name                 = EXCLUDED.name,
@@ -82,6 +87,9 @@ export async function POST(request: Request) {
         bvps                 = EXCLUDED.bvps,
         discount_factor      = EXCLUDED.discount_factor,
         notes                = EXCLUDED.notes,
+        data_source          = EXCLUDED.data_source,
+        price_as_of          = EXCLUDED.price_as_of,
+        ai_confidence        = EXCLUDED.ai_confidence,
         updated_at           = NOW()
       RETURNING *
     `;

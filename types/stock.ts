@@ -52,3 +52,41 @@ export interface StockWithPrice extends Stock {
   current_price: number | null;
   price_error?: boolean;
 }
+
+// ── AI Payload (returned by /api/stocks/analyze) ───────────────────────────
+
+export interface StockAIPayload {
+  ticker: string;
+  type: StockType;
+  name: string;
+
+  // Current price (fetched by AI via web search)
+  currentPrice: number | null;
+  currency: string;
+
+  // Valuation inputs (map to existing DB columns)
+  eps_value: number | null;        // Growth: TTM EPS
+  growth_rate: number | null;      // Growth: PE multiple
+  expected_dividend: number | null; // Dividends: annual dividend per share
+  dividend_return_rate: number | null; // Dividends: target yield (e.g. 0.04)
+  bvps: number | null;             // Asset: book value per share
+  discount_factor: number | null;  // Asset: discount rate (e.g. 0.8)
+
+  // F.A.C.T.S (same enum values as DB)
+  eps: string;
+  fcf: string;
+  roe: string;
+  int_cov: string;
+  moat: string;
+  net_margin: string;
+  has_dividends: string;
+  policy: string;
+  tech_risk: string;
+  mgmt_risk: string;
+
+  // AI metadata
+  notes: string;
+  dataSource: string;
+  priceAsOf: string;    // YYYY-MM-DD
+  confidence: 'High' | 'Medium' | 'Low';
+}
