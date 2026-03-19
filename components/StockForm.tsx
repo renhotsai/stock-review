@@ -204,7 +204,6 @@ export default function StockForm({ initialData, mode }: Props) {
 
   async function handleLookup() {
     const symbol = watchedData.symbol.trim().toUpperCase();
-    const type = watchedData.type;
     if (!symbol) return;
 
     setFetchError('');
@@ -215,7 +214,7 @@ export default function StockForm({ initialData, mode }: Props) {
       const res = await fetch('/api/stocks/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker: symbol, type }),
+        body: JSON.stringify({ ticker: symbol }),
       });
 
       if (!res.ok) {
@@ -230,7 +229,7 @@ export default function StockForm({ initialData, mode }: Props) {
 
       const newValues: Partial<FormData> = {
         name: ai.name ?? symbol,
-        type: ai.type ?? type,
+        type: ai.type,
         added_date: new Date().toISOString().split('T')[0],
         eps: ai.eps,
         fcf: ai.fcf,
@@ -254,7 +253,7 @@ export default function StockForm({ initialData, mode }: Props) {
       const cleanDefaults: FormData = {
         symbol: getValues('symbol'),
         name: '',
-        type,
+        type: ai.type,
         added_date: '',
         eps: 'EMPTY', fcf: 'EMPTY', roe: 'EMPTY', int_cov: 'EMPTY',
         moat: 'EMPTY', net_margin: 'EMPTY', has_dividends: 'EMPTY',
@@ -382,22 +381,6 @@ export default function StockForm({ initialData, mode }: Props) {
                   />
                   {errors.symbol && <p className="text-red-500 text-xs mt-1 text-center">{errors.symbol.message}</p>}
                   {fetchError && <p className="text-red-500 text-xs mt-1 text-center">{fetchError}</p>}
-                  {/* Type selector — required before AI analysis */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1 text-center">股票類型</label>
-                    <Controller
-                      name="type"
-                      control={control}
-                      render={({ field }) => (
-                        <select {...field} className={`${selectClass} text-center`}>
-                          <option value="Growth">Growth 成長股</option>
-                          <option value="Dividends">Dividends 股息股</option>
-                          <option value="Asset">Asset 資產股</option>
-                        </select>
-                      )}
-                    />
-                    <p className="text-xs text-gray-400 mt-1 text-center">AI 將根據類型查詢對應數據</p>
-                  </div>
                 </div>
                 <button
                   type="button"
@@ -412,7 +395,7 @@ export default function StockForm({ initialData, mode }: Props) {
               <div className="flex flex-col items-center py-12 gap-4">
                 <div className="text-center">
                   <p className="text-base font-semibold text-gray-700">
-                    {watchedData.symbol.toUpperCase()} · {watchedData.type}
+                    {watchedData.symbol.toUpperCase()}
                   </p>
                   <p className="text-sm text-gray-400 mt-0.5">AI 正在查詢財務數據及分析中…</p>
                 </div>

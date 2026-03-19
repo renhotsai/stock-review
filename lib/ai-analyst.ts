@@ -12,7 +12,8 @@ function safeNum(v: unknown): number | null {
   return isFinite(n) && n > 0 ? n : null;
 }
 
-function sanitizePayload(raw: Record<string, unknown>, ticker: string, type: StockType): StockAIPayload {
+function sanitizePayload(raw: Record<string, unknown>, ticker: string): StockAIPayload {
+  const type = pick(raw.type, ['Growth', 'Dividends', 'Asset'] as StockType[], 'Dividends');
   return {
     ticker: ticker.toUpperCase(),
     type,
@@ -47,32 +48,18 @@ function sanitizePayload(raw: Record<string, unknown>, ticker: string, type: Sto
 
 // ── Prompt builder ─────────────────────────────────────────────────────────────
 
-function buildPrompt(ticker: string, type: StockType): string {
-  const typeInstructions: Record<StockType, string> = {
-    Growth: `- eps_value: TTM (trailing twelve months) EPS in the stock's native currency
-- growth_rate: a reasonable PE multiple (e.g. 15 for a stable grower, 20–25 for a faster grower)
-- expected_dividend: annual dividend per share (null if no dividend)
-- dividend_return_rate: null
-- bvps: null
-- discount_factor: null`,
-    Dividends: `- eps_value: TTM EPS (still useful context)
-- growth_rate: null
-- expected_dividend: annual dividend per share in native currency (sum of last 4 quarters)
-- dividend_return_rate: target yield as decimal (e.g. 0.04 for 4%; use sector norms)
-- bvps: null
-- discount_factor: null`,
-    Asset: `- eps_value: null
-- growth_rate: null
-- expected_dividend: null
-- dividend_return_rate: null
-- bvps: book value per share (most recent quarter)
-- discount_factor: 0.8 (standard 80% discount)`,
-  };
+function buildPrompt(ticker: string): string {
+  return `You are a professional stock research analyst. Analyze the stock ${ticker}.
 
-  return `You are a professional stock research analyst. Analyze the stock ${ticker} (type: ${type}).
+First, classify it into ONE of these types:
+- "Growth": high-growth company, valued on earnings (EPS × PE multiple). Typically no or low dividend.
+- "Dividends": mature company, valued on dividend yield. Pays regular, meaningful dividends.
+- "Asset": valued on book value (e.g. banks, REITs, holding companies). Book value is the primary measure.
 
-Fill in ALL fields using your knowledge of this company's financials. For ${type} valuation, provide:
-${typeInstructions[type]}
+Then fill in the valuation fields based on the type you chose:
+- If Growth:    provide eps_value (TTM EPS) and growth_rate (reasonable PE multiple, e.g. 15–25). Set expected_dividend, dividend_return_rate, bvps, discount_factor to null.
+- If Dividends: provide expected_dividend (annual dividend/share) and dividend_return_rate (target yield, e.g. 0.04). Set growth_rate, bvps, discount_factor to null.
+- If Asset:     provide bvps (book value per share) and discount_factor (use 0.8). Set eps_value, growth_rate, expected_dividend, dividend_return_rate to null.
 
 Today's date: ${new Date().toISOString().split('T')[0]}
 
@@ -80,6 +67,7 @@ Return ONLY a valid JSON object with exactly these fields:
 
 {
   "name": "Full company name",
+  "type": "Growth" | "Dividends" | "Asset",
   "currentPrice": <number — most recent price you know>,
   "currency": "USD",
 
@@ -101,13 +89,14 @@ Return ONLY a valid JSON object with exactly these fields:
   "tech_risk":    "LOW" | "MEDIUM" | "HIGH" | "EMPTY",
   "mgmt_risk":    "LOW" | "MEDIUM" | "HIGH" | "EMPTY",
 
-  "notes": "brief explanation of valuation rationale and key facts",
+  "notes": "brief explanation of type classification and valuation rationale",
   "dataSource": "e.g. FY2024 10-K / Q3 2024 10-Q",
   "priceAsOf": "YYYY-MM-DD — date your price data is from",
   "confidence": "High" | "Medium" | "Low"
 }
 
 Rules:
+- type: "Dividends" if paying regular dividends; "Growth" if high revenue growth + no/low dividend; "Asset" if valued on book value
 - eps: YES if EPS has grown consistently over 3+ years
 - fcf: YES if free cash flow is consistently positive
 - roe: YES if ROE > 15% (evaluate true economic ROE, not distorted by buybacks)
@@ -122,14 +111,14 @@ Rules:
 
 // ── Main function ──────────────────────────────────────────────────────────────
 
-export async function analyzeStock(ticker: string, type: StockType): Promise<StockAIPayload> {
+export async function analyzeStock(ticker: string): Promise<StockAIPayload> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not configured');
   }
 
   const openai = new OpenAI({ apiKey });
-  const prompt = buildPrompt(ticker.toUpperCase(), type);
+  const prompt = buildPrompt(ticker.toUpperCase());
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -145,5 +134,5 @@ export async function analyzeStock(ticker: string, type: StockType): Promise<Sto
   });
 
   const raw = JSON.parse(completion.choices[0].message.content ?? '{}') as Record<string, unknown>;
-  return sanitizePayload(raw, ticker, type);
+  return sanitizePayload(raw, ticker);
 }
