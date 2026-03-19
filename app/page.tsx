@@ -36,9 +36,9 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">股票追蹤清單</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">股票追蹤清單</h1>
           <p className="text-sm text-gray-500 mt-1">
             追蹤 {totalCount} 支美股 · 股價每 20 分鐘更新
           </p>
@@ -57,6 +57,26 @@ export default async function DashboardPage() {
             + 新增股票
           </Link>
         </div>
+      </div>
+
+      {/* Color legend */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <span className="text-xs text-gray-400 mr-1">價格區間說明：</span>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+          買入區間
+          <span className="text-green-600 font-normal">· 現價 ≤ 合理買入價</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 inline-block" />
+          合理區間
+          <span className="text-yellow-700 font-normal">· 合理買入價 &lt; 現價 ≤ 重新估值</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+          高估
+          <span className="text-red-600 font-normal">· 現價 &gt; 重新估值</span>
+        </span>
       </div>
 
       <StockTable stocks={stocksWithValuation} />
