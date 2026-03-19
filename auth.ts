@@ -5,10 +5,12 @@ import Google from 'next-auth/providers/google';
 import { Pool } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 import { sql } from '@/lib/db';
+import { authConfig } from './auth.config';
 
 export const { handlers, auth, signIn, signOut } = NextAuth(() => {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   return {
+    ...authConfig,
     adapter: NeonAdapter(pool),
     session: { strategy: 'jwt' },
     providers: [
@@ -39,18 +41,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
         },
       }),
     ],
-    callbacks: {
-      async jwt({ token, user }) {
-        if (user) token.id = user.id;
-        return token;
-      },
-      async session({ session, token }) {
-        if (token.id) session.user.id = token.id as string;
-        return session;
-      },
-    },
-    pages: {
-      signIn: '/auth/signin',
-    },
   };
 });
