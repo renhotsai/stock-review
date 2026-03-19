@@ -45,12 +45,18 @@ export default function StockTable({ stocks }: StockTableProps) {
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
             <th className="px-4 py-3 text-left font-semibold text-gray-600">股票代碼</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-600">名稱</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-600">類型</th>
-            <th className="px-4 py-3 text-center font-semibold text-gray-600">信心分數</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-600 hidden sm:table-cell">名稱</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-600 hidden md:table-cell">類型</th>
+            <th className="px-4 py-3 text-center font-semibold text-gray-600 hidden sm:table-cell">信心分數</th>
             <th className="px-4 py-3 text-right font-semibold text-gray-600">現在股價</th>
-            <th className="px-4 py-3 text-right font-semibold text-gray-600">合理買入價</th>
-            <th className="px-4 py-3 text-right font-semibold text-gray-600">重新估值</th>
+            <th className="px-4 py-3 text-right font-semibold text-gray-600 hidden lg:table-cell">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1 align-middle" />
+              合理買入價
+            </th>
+            <th className="px-4 py-3 text-right font-semibold text-gray-600 hidden lg:table-cell">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500 mr-1 align-middle" />
+              重新估值
+            </th>
             <th className="px-4 py-3 text-center font-semibold text-gray-600">狀態</th>
             <th className="px-4 py-3 text-center font-semibold text-gray-600">操作</th>
           </tr>
