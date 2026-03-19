@@ -322,8 +322,7 @@ export default function StockForm({ initialData, mode }: Props) {
         throw new Error(resData.error ?? 'Something went wrong');
       }
 
-      router.push('/');
-      router.refresh();
+      window.location.href = '/';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
