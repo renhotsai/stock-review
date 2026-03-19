@@ -1,10 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import QueryProvider from '@/components/QueryProvider';
 
 export const metadata: Metadata = {
   title: 'BOS Stock Tracker',
   description: 'Monitor US stocks against fair entry prices using F.A.C.T.S methodology',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
