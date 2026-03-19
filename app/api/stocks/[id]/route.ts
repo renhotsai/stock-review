@@ -29,6 +29,7 @@ export async function PUT(
       symbol, name, type, score, entry_price, review_price, added_date,
       eps, fcf, roe, int_cov, moat, net_margin, has_dividends, policy, tech_risk, mgmt_risk,
       eps_value, growth_rate, expected_dividend, dividend_return_rate, bvps, discount_factor, notes,
+      data_source, price_as_of, ai_confidence,
     } = body;
 
     const [stock] = await sql`
@@ -56,6 +57,9 @@ export async function PUT(
         bvps                 = ${bvps ?? null},
         discount_factor      = ${discount_factor ?? 0.8},
         notes                = ${notes ?? ''},
+        data_source          = ${data_source ?? null},
+        price_as_of          = ${price_as_of ?? null},
+        ai_confidence        = ${ai_confidence ?? 'Low'},
         updated_at           = NOW()
       WHERE id = ${id}
       RETURNING *

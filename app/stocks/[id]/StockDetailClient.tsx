@@ -37,7 +37,7 @@ export default function StockDetailClient({ stock }: StockDetailClientProps) {
   const [tab, setTab] = useState<Tab>('valuation');
 
   const { data: priceData, isLoading: priceLoading } = useStockPrice(stock.symbol);
-  const { data: financials, isLoading: finLoading } = useFinancials(
+  const { data: financials, isPending: finLoading } = useFinancials(
     stock.symbol,
     tab === 'profile' || tab === 'financials'
   );

@@ -1,5 +1,5 @@
 // Run: node scripts/setup-db.js
-require('dotenv').config({ path: '.env.local' });
+try { require('dotenv').config({ path: '.env.local' }); } catch { /* dotenv optional, Vercel injects env vars directly */ }
 const { neon } = require('@neondatabase/serverless');
 
 async function main() {

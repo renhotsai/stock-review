@@ -1,4 +1,4 @@
-import { sql } from '@/lib/db';
+import { sql, setupDatabase } from '@/lib/db';
 import type { Stock } from '@/lib/db';
 import StockTable from '@/components/StockTable';
 import { calculateValuation } from '@/lib/valuation';
@@ -10,9 +10,15 @@ export const revalidate = 0;
 async function getStocks(): Promise<Stock[]> {
   try {
     return (await sql`SELECT * FROM stocks ORDER BY symbol ASC`) as Stock[];
-  } catch (err) {
-    console.error('Failed to fetch stocks from DB:', err);
-    return [];
+  } catch {
+    // Table likely doesn't exist yet — initialize schema and retry
+    try {
+      await setupDatabase();
+      return (await sql`SELECT * FROM stocks ORDER BY symbol ASC`) as Stock[];
+    } catch (err) {
+      console.error('DB init failed:', err);
+      return [];
+    }
   }
 }
 
