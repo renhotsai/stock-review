@@ -48,6 +48,10 @@
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
     "yahoo-finance2": "^3.13.2",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "next-auth": "5.0.0-beta.30",
+    "@auth/neon-adapter": "^1.11.1",
+    "bcryptjs": "^3.0.3",
+    "@types/bcryptjs": "^2.4.6"
   }
 }

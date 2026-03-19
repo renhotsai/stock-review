@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
+import { auth } from '@/auth';
 
 export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = Number(session.user.id);
     const id = parseInt(params.id);
-    const [stock] = await sql`SELECT * FROM stocks WHERE id = ${id}`;
+
+    const [stock] = await sql`SELECT * FROM stocks WHERE id = ${id} AND user_id = ${userId}`;
     if (!stock) {
       return NextResponse.json({ error: 'Stock not found' }, { status: 404 });
     }
@@ -23,7 +30,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = Number(session.user.id);
     const id = parseInt(params.id);
+
     const body = await request.json();
     const {
       symbol, name, type, score, entry_price, review_price, added_date,
@@ -61,7 +74,7 @@ export async function PUT(
         price_as_of          = ${price_as_of ?? null},
         ai_confidence        = ${ai_confidence ?? 'Low'},
         updated_at           = NOW()
-      WHERE id = ${id}
+      WHERE id = ${id} AND user_id = ${userId}
       RETURNING *
     `;
 
@@ -69,7 +82,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Stock not found' }, { status: 404 });
     }
 
-    // Suppress unused variable warning
     void symbol;
 
     return NextResponse.json(stock);
@@ -84,8 +96,14 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = Number(session.user.id);
     const id = parseInt(params.id);
-    await sql`DELETE FROM stocks WHERE id = ${id}`;
+
+    await sql`DELETE FROM stocks WHERE id = ${id} AND user_id = ${userId}`;
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/stocks/[id] error:', error);

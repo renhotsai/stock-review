@@ -33,6 +33,7 @@ export type StockType = 'Growth' | 'Dividends' | 'Asset';
 
 export interface Stock {
   id: number;
+  user_id: number | null;
   symbol: string;
   name: string | null;
   type: StockType;
@@ -169,6 +170,63 @@ export async function setupDatabase() {
   await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS data_source          VARCHAR(200) DEFAULT ''`;
   await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS price_as_of          DATE`;
   await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS ai_confidence        VARCHAR(10) DEFAULT 'Low'`;
+
+  // Auth.js required tables
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id              SERIAL PRIMARY KEY,
+      name            VARCHAR(255),
+      email           VARCHAR(255) UNIQUE,
+      "emailVerified" TIMESTAMPTZ,
+      image           TEXT,
+      password        TEXT
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS accounts (
+      id                  SERIAL PRIMARY KEY,
+      "userId"            INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type                VARCHAR(255) NOT NULL,
+      provider            VARCHAR(255) NOT NULL,
+      "providerAccountId" VARCHAR(255) NOT NULL,
+      refresh_token       TEXT,
+      access_token        TEXT,
+      expires_at          BIGINT,
+      id_token            TEXT,
+      scope               TEXT,
+      session_state       TEXT,
+      token_type          TEXT
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id             SERIAL PRIMARY KEY,
+      "userId"       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires        TIMESTAMPTZ NOT NULL,
+      "sessionToken" VARCHAR(255) NOT NULL UNIQUE
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS verification_token (
+      identifier TEXT NOT NULL,
+      expires    TIMESTAMPTZ NOT NULL,
+      token      TEXT NOT NULL,
+      PRIMARY KEY (identifier, token)
+    )
+  `;
+
+  // Add password column to users if it doesn't exist yet (idempotent)
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT`;
+
+  // Add user_id to stocks for multi-user support
+  await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`;
+
+  // Drop old single-column unique constraint and replace with composite (symbol, user_id)
+  await sql`ALTER TABLE stocks DROP CONSTRAINT IF EXISTS stocks_symbol_key`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS stocks_symbol_user_id_idx ON stocks(symbol, user_id)`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS notifications (

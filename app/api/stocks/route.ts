@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
+import { auth } from '@/auth';
 
 export async function GET() {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = Number(session.user.id);
     const stocks = await sql`
-      SELECT * FROM stocks ORDER BY symbol ASC
+      SELECT * FROM stocks WHERE user_id = ${userId} ORDER BY symbol ASC
     `;
     return NextResponse.json(stocks);
   } catch (error) {
@@ -15,6 +22,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = Number(session.user.id);
+
     const body = await request.json();
     const {
       symbol, name, type, score, entry_price, review_price, added_date,
@@ -29,12 +42,14 @@ export async function POST(request: Request) {
 
     const [stock] = await sql`
       INSERT INTO stocks (
+        user_id,
         symbol, name, type, score, entry_price, review_price, added_date,
         eps, fcf, roe, int_cov, moat, net_margin, has_dividends, policy, tech_risk, mgmt_risk,
         eps_value, growth_rate, expected_dividend, dividend_return_rate, bvps, discount_factor, notes,
         data_source, price_as_of, ai_confidence
       )
       VALUES (
+        ${userId},
         ${symbol.toUpperCase()},
         ${name ?? null},
         ${type ?? null},
@@ -63,7 +78,7 @@ export async function POST(request: Request) {
         ${price_as_of ?? null},
         ${ai_confidence ?? 'Low'}
       )
-      ON CONFLICT (symbol) DO UPDATE SET
+      ON CONFLICT (symbol, user_id) DO UPDATE SET
         name                 = EXCLUDED.name,
         type                 = EXCLUDED.type,
         score                = EXCLUDED.score,
