@@ -1,7 +1,6 @@
 import NextAuth from 'next-auth';
 import NeonAdapter from '@auth/neon-adapter';
 import Credentials from 'next-auth/providers/credentials';
-import Google from 'next-auth/providers/google';
 import { Pool } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 import { sql } from '@/lib/db';
@@ -14,7 +13,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
     adapter: NeonAdapter(pool),
     session: { strategy: 'jwt' },
     providers: [
-      Google,
       Credentials({
         credentials: {
           email: { label: 'Email', type: 'email' },
