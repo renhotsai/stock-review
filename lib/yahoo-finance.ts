@@ -163,12 +163,21 @@ const YF_HEADERS = {
 };
 
 async function yfChart(ticker: string, params = 'interval=1d&range=1d') {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?${params}`;
-  const res = await fetch(url, { headers: YF_HEADERS });
-  if (!res.ok) throw new Error(`chart HTTP ${res.status}`);
-  const json = await res.json();
-  if (json.chart?.error) throw new Error(json.chart.error.description);
-  return json?.chart?.result?.[0] ?? null;
+  const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+  let lastError: Error | null = null;
+  for (const host of hosts) {
+    try {
+      const url = `https://${host}/v8/finance/chart/${ticker}?${params}`;
+      const res = await fetch(url, { headers: YF_HEADERS });
+      if (!res.ok) throw new Error(`chart HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.chart?.error) throw new Error(json.chart.error.description);
+      return json?.chart?.result?.[0] ?? null;
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw lastError ?? new Error('Yahoo Finance unavailable');
 }
 
 // ── Public types ──────────────────────────────────────────────────────────────

@@ -4,26 +4,31 @@ import StockTable from '@/components/StockTable';
 import { calculateValuation } from '@/lib/valuation';
 import Link from 'next/link';
 import StockSearch from '@/components/StockSearch';
+import { auth } from '@/auth';
 
 export const revalidate = 0;
 
-async function getStocks(): Promise<Stock[]> {
+async function getStocks(userId: number): Promise<{ stocks: Stock[]; error?: string }> {
   try {
-    return (await sql`SELECT * FROM stocks ORDER BY symbol ASC`) as Stock[];
+    const stocks = (await sql`SELECT * FROM stocks WHERE user_id = ${userId} ORDER BY symbol ASC`) as Stock[];
+    return { stocks };
   } catch {
     // Table likely doesn't exist yet — initialize schema and retry
     try {
       await setupDatabase();
-      return (await sql`SELECT * FROM stocks ORDER BY symbol ASC`) as Stock[];
+      const stocks = (await sql`SELECT * FROM stocks WHERE user_id = ${userId} ORDER BY symbol ASC`) as Stock[];
+      return { stocks };
     } catch (err) {
       console.error('DB init failed:', err);
-      return [];
+      return { stocks: [], error: '資料庫連線失敗，請稍後再試或聯絡管理員。' };
     }
   }
 }
 
 export default async function DashboardPage() {
-  const stocks = await getStocks();
+  const session = await auth();
+  const userId = Number(session?.user?.id);
+  const { stocks, error } = await getStocks(userId);
 
   // Pre-calculate scores from DB fields (no live price needed for counts)
   const stocksWithValuation = stocks.map((s) => {
@@ -58,6 +63,13 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
+          <p className="text-sm text-red-600 font-medium">⚠ 發生錯誤</p>
+          <p className="text-sm text-red-500 mt-0.5">{error}</p>
+        </div>
+      )}
 
       {/* Color legend */}
       <div className="flex flex-wrap items-center gap-2 mb-4">

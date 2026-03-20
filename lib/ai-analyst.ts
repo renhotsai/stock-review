@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import type { StockAIPayload, StockType } from '@/types/stock';
+import { getStockPrice } from '@/lib/yahoo-finance';
 
 // ── Sanitizer ─────────────────────────────────────────────────────────────────
 
@@ -48,8 +49,16 @@ function sanitizePayload(raw: Record<string, unknown>, ticker: string): StockAIP
 
 // ── Prompt builder ─────────────────────────────────────────────────────────────
 
-function buildPrompt(ticker: string): string {
+function buildPrompt(ticker: string, currentPrice: number | null): string {
+  const today = new Date().toISOString().split('T')[0];
+  const priceNote = currentPrice != null
+    ? `Current market price (fetched live from Yahoo Finance as of today): $${currentPrice.toFixed(2)}`
+    : 'Current market price: unavailable (use null for currentPrice)';
+
   return `You are a professional stock research analyst. Analyze the stock ${ticker}.
+
+${priceNote}
+Today's date: ${today}
 
 First, classify it into ONE of these types:
 - "Growth": high-growth company, valued on earnings (EPS × PE multiple). Typically no or low dividend.
@@ -61,14 +70,12 @@ Then fill in the valuation fields based on the type you chose:
 - If Dividends: provide expected_dividend (annual dividend/share) and dividend_return_rate (target yield, e.g. 0.04). Set growth_rate, bvps, discount_factor to null.
 - If Asset:     provide bvps (book value per share) and discount_factor (use 0.8). Set eps_value, growth_rate, expected_dividend, dividend_return_rate to null.
 
-Today's date: ${new Date().toISOString().split('T')[0]}
-
 Return ONLY a valid JSON object with exactly these fields:
 
 {
   "name": "Full company name",
   "type": "Growth" | "Dividends" | "Asset",
-  "currentPrice": <number — most recent price you know>,
+  "currentPrice": <use the live price provided above, or null if unavailable>,
   "currency": "USD",
 
   "eps_value": <number or null>,
@@ -91,7 +98,7 @@ Return ONLY a valid JSON object with exactly these fields:
 
   "notes": "brief explanation of type classification and valuation rationale",
   "dataSource": "e.g. FY2024 10-K / Q3 2024 10-Q",
-  "priceAsOf": "YYYY-MM-DD — date your price data is from",
+  "priceAsOf": "${today}",
   "confidence": "High" | "Medium" | "Low"
 }
 
@@ -105,7 +112,8 @@ Rules:
 - net_margin: ABOVE_20 if >20%; ABOVE_10 if >10%; INCREASING if growing YoY; NO otherwise
 - policy: YES if shareholder-friendly (buybacks, dividends, low dilution)
 - tech_risk / mgmt_risk: LOW / MEDIUM / HIGH
-- confidence: High if data is recent (within ~6 months); Medium if 6–18 months; Low if older or uncertain
+- confidence: High if fundamental data is recent (within ~6 months); Medium if 6–18 months; Low if older or uncertain
+- priceAsOf MUST be "${today}" since the price was fetched live today
 - Only return JSON, no markdown, no extra text`;
 }
 
@@ -117,8 +125,14 @@ export async function analyzeStock(ticker: string): Promise<StockAIPayload> {
     throw new Error('OPENAI_API_KEY is not configured');
   }
 
+  // Fetch live price from Yahoo Finance before calling OpenAI
+  const t = ticker.toUpperCase();
+  const priceResult = await getStockPrice(t);
+  const livePrice = priceResult.price;
+  const today = new Date().toISOString().split('T')[0];
+
   const openai = new OpenAI({ apiKey });
-  const prompt = buildPrompt(ticker.toUpperCase());
+  const prompt = buildPrompt(t, livePrice);
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -134,5 +148,11 @@ export async function analyzeStock(ticker: string): Promise<StockAIPayload> {
   });
 
   const raw = JSON.parse(completion.choices[0].message.content ?? '{}') as Record<string, unknown>;
-  return sanitizePayload(raw, ticker);
+  const result = sanitizePayload(raw, ticker);
+
+  // Override with live price — never trust AI's price data
+  result.currentPrice = livePrice;
+  result.priceAsOf = today;
+
+  return result;
 }
