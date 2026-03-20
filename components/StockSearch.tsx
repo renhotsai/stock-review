@@ -104,6 +104,17 @@ export default function StockSearch() {
               <span className="font-semibold text-gray-900 w-16 shrink-0">{r.symbol}</span>
               <span className="text-gray-500 text-xs truncate flex-1">{r.name}</span>
               <span className="text-gray-400 text-xs shrink-0">{r.exchange}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/stocks/new?symbol=${r.symbol}`);
+                  setQuery('');
+                  setOpen(false);
+                }}
+                className="shrink-0 text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 border border-blue-200"
+              >
+                新增
+              </button>
             </li>
           ))}
         </ul>
