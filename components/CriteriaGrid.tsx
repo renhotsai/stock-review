@@ -1,109 +1,110 @@
 'use client';
 
 import type { Stock } from '@/lib/db';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface CriterionItem {
   key: keyof Stock;
-  label: string;
-  options: { value: string; label: string; positive?: boolean; negative?: boolean }[];
+  labelKey: string;
+  options: { value: string; labelKey: string; positive?: boolean; negative?: boolean }[];
 }
 
 const CRITERIA: CriterionItem[] = [
   {
     key: 'eps',
-    label: 'EPS 穩定增長',
+    labelKey: 'stockForm.facts.eps',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'YES', label: '是', positive: true },
-      { value: 'NO', label: '否', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'YES', labelKey: 'criteriaGrid.yes', positive: true },
+      { value: 'NO', labelKey: 'criteriaGrid.no', negative: true },
     ],
   },
   {
     key: 'fcf',
-    label: '自由現金流 (FCF)',
+    labelKey: 'stockForm.facts.fcf',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'YES', label: '正值', positive: true },
-      { value: 'NO', label: '負值', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'YES', labelKey: 'criteriaGrid.positive', positive: true },
+      { value: 'NO', labelKey: 'criteriaGrid.negative', negative: true },
     ],
   },
   {
     key: 'roe',
-    label: 'ROE > 15%',
+    labelKey: 'stockForm.facts.roe',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'YES', label: '是', positive: true },
-      { value: 'NO', label: '否', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'YES', labelKey: 'criteriaGrid.yes', positive: true },
+      { value: 'NO', labelKey: 'criteriaGrid.no', negative: true },
     ],
   },
   {
     key: 'int_cov',
-    label: '利息覆蓋率',
+    labelKey: 'stockForm.facts.intCov',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'ABOVE_10', label: '> 10x', positive: true },
-      { value: 'ABOVE_4', label: '> 4x' },
-      { value: 'NO_DEBT', label: '無負債', positive: true },
-      { value: 'NO', label: '不足', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'ABOVE_10', labelKey: 'criteriaGrid.above10', positive: true },
+      { value: 'ABOVE_4', labelKey: 'criteriaGrid.above4' },
+      { value: 'NO_DEBT', labelKey: 'criteriaGrid.noDebt', positive: true },
+      { value: 'NO', labelKey: 'criteriaGrid.insufficient', negative: true },
     ],
   },
   {
     key: 'moat',
-    label: '護城河',
+    labelKey: 'stockForm.facts.moat',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'TWO_MOATS', label: '兩項護城河', positive: true },
-      { value: 'ONE_MOAT', label: '一項護城河' },
-      { value: 'NO', label: '無護城河', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'TWO_MOATS', labelKey: 'criteriaGrid.twoMoats', positive: true },
+      { value: 'ONE_MOAT', labelKey: 'criteriaGrid.oneMoat' },
+      { value: 'NO', labelKey: 'criteriaGrid.noMoat', negative: true },
     ],
   },
   {
     key: 'net_margin',
-    label: '淨利潤率',
+    labelKey: 'stockForm.facts.netMargin',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'ABOVE_20', label: '> 20%', positive: true },
-      { value: 'ABOVE_10', label: '> 10%' },
-      { value: 'INCREASING', label: '持續增長' },
-      { value: 'NO', label: '不達標', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'ABOVE_20', labelKey: 'criteriaGrid.above20', positive: true },
+      { value: 'ABOVE_10', labelKey: 'criteriaGrid.above10pct' },
+      { value: 'INCREASING', labelKey: 'criteriaGrid.increasing' },
+      { value: 'NO', labelKey: 'criteriaGrid.belowStandard', negative: true },
     ],
   },
   {
     key: 'has_dividends',
-    label: '派發股息',
+    labelKey: 'stockForm.facts.hasDividends',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'YES', label: '是', positive: true },
-      { value: 'NO', label: '否', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'YES', labelKey: 'criteriaGrid.yes', positive: true },
+      { value: 'NO', labelKey: 'criteriaGrid.no', negative: true },
     ],
   },
   {
     key: 'policy',
-    label: '股東友善政策',
+    labelKey: 'stockForm.facts.policy',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'YES', label: '是', positive: true },
-      { value: 'NO', label: '否', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'YES', labelKey: 'criteriaGrid.yes', positive: true },
+      { value: 'NO', labelKey: 'criteriaGrid.no', negative: true },
     ],
   },
   {
     key: 'tech_risk',
-    label: '科技顛覆風險',
+    labelKey: 'stockForm.facts.techRisk',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'LOW', label: '低', positive: true },
-      { value: 'MEDIUM', label: '中' },
-      { value: 'HIGH', label: '高', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'LOW', labelKey: 'criteriaGrid.low', positive: true },
+      { value: 'MEDIUM', labelKey: 'criteriaGrid.medium' },
+      { value: 'HIGH', labelKey: 'criteriaGrid.high', negative: true },
     ],
   },
   {
     key: 'mgmt_risk',
-    label: '管理層風險',
+    labelKey: 'stockForm.facts.mgmtRisk',
     options: [
-      { value: 'EMPTY', label: '未評估' },
-      { value: 'LOW', label: '低', positive: true },
-      { value: 'MEDIUM', label: '中' },
-      { value: 'HIGH', label: '高', negative: true },
+      { value: 'EMPTY', labelKey: 'criteriaGrid.notAssessed' },
+      { value: 'LOW', labelKey: 'criteriaGrid.low', positive: true },
+      { value: 'MEDIUM', labelKey: 'criteriaGrid.medium' },
+      { value: 'HIGH', labelKey: 'criteriaGrid.high', negative: true },
     ],
   },
 ];
@@ -113,14 +114,16 @@ interface CriteriaGridProps {
 }
 
 export default function CriteriaGrid({ stock }: CriteriaGridProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">F.A.C.T.S 評估標準</h3>
+      <h3 className="text-lg font-bold text-gray-900 mb-4">{t('criteriaGrid.title')}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {CRITERIA.map((criterion) => {
           const rawValue = stock[criterion.key] as string;
           const opt = criterion.options.find((o) => o.value === rawValue);
-          const label = opt?.label ?? rawValue;
+          const label = opt ? t(opt.labelKey) : rawValue;
           const isPositive = opt?.positive;
           const isNegative = opt?.negative;
           const isEmpty = rawValue === 'EMPTY' || !rawValue;
@@ -130,7 +133,7 @@ export default function CriteriaGrid({ stock }: CriteriaGridProps) {
               key={criterion.key}
               className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100"
             >
-              <span className="text-sm text-gray-600">{criterion.label}</span>
+              <span className="text-sm text-gray-600">{t(criterion.labelKey)}</span>
               <span
                 className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                   isEmpty

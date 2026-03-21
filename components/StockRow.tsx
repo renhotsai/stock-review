@@ -7,6 +7,7 @@ import type { PriceStatus } from '@/lib/valuation';
 import PriceStatusBadge from './PriceStatusBadge';
 import ScoreBadge from './ScoreBadge';
 import type { Stock } from '@/lib/db';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const rowBgMap: Record<PriceStatus, string> = {
   undervalued: 'bg-green-50/40',
@@ -29,6 +30,7 @@ interface StockRowProps {
 }
 
 export default function StockRow({ stock, onDelete, isDeleting }: StockRowProps) {
+  const { t } = useTranslation();
   const { data: priceData, isLoading: priceLoading } = useStockPrice(stock.symbol);
   const currentPrice = priceData?.price ?? null;
 
@@ -65,7 +67,7 @@ export default function StockRow({ stock, onDelete, isDeleting }: StockRowProps)
       </td>
       <td className="px-4 py-3 text-right font-mono">
         {priceLoading ? (
-          <span className="text-gray-400 text-xs">載入中…</span>
+          <span className="text-gray-400 text-xs">{t('stockRow.loading')}</span>
         ) : currentPrice != null ? (
           <span className={`font-semibold ${priceColorMap[status]}`}>
             ${currentPrice.toFixed(2)}
@@ -89,20 +91,20 @@ export default function StockRow({ stock, onDelete, isDeleting }: StockRowProps)
             href={`/stocks/${stock.id}`}
             className="text-xs text-gray-500 hover:underline"
           >
-            詳情
+            {t('stockRow.details')}
           </Link>
           <Link
             href={`/stocks/${stock.id}/edit`}
             className="text-xs text-blue-600 hover:underline"
           >
-            編輯
+            {t('stockRow.edit')}
           </Link>
           <button
             onClick={() => onDelete(stock.id, stock.symbol)}
             disabled={isDeleting}
             className="text-xs text-red-500 hover:underline disabled:opacity-50"
           >
-            {isDeleting ? '…' : '刪除'}
+            {isDeleting ? t('stockRow.deleting') : t('stockRow.delete')}
           </button>
         </div>
       </td>

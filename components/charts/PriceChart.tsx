@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { usePriceHistory } from '@/hooks/usePriceHistory';
 import type { PeriodOption } from '@/lib/yahoo-finance';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const PERIODS: PeriodOption[] = ['1M', '3M', '6M', '1Y', '5Y', 'MAX'];
 
@@ -27,6 +28,7 @@ interface PriceChartProps {
 }
 
 export default function PriceChart({ ticker, fairValue, reviewValue }: PriceChartProps) {
+  const { t } = useTranslation();
   const { data, isLoading, period, setPeriod } = usePriceHistory(ticker, '1Y');
 
   const chartData = (data ?? []).map((p) => ({
@@ -44,7 +46,7 @@ export default function PriceChart({ ticker, fairValue, reviewValue }: PriceChar
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-bold text-gray-900">價格走勢</h3>
+        <h3 className="text-base font-bold text-gray-900">{t('financials.charts.priceChart')}</h3>
         <div className="flex gap-1">
           {PERIODS.map((p) => (
             <button
@@ -67,13 +69,13 @@ export default function PriceChart({ ticker, fairValue, reviewValue }: PriceChar
         {fairValue && (
           <span className="flex items-center gap-1.5 text-green-700">
             <span className="w-6 border-t-2 border-dashed border-green-500" />
-            合理買入價 ${fairValue.toFixed(2)}
+            {t('financials.charts.fairValue')} ${fairValue.toFixed(2)}
           </span>
         )}
         {reviewValue && (
           <span className="flex items-center gap-1.5 text-yellow-700">
             <span className="w-6 border-t-2 border-dashed border-yellow-500" />
-            重新估值 ${reviewValue.toFixed(2)}
+            {t('financials.charts.reviewValue')} ${reviewValue.toFixed(2)}
           </span>
         )}
       </div>

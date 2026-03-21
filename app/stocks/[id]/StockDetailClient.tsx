@@ -18,16 +18,9 @@ import DividendHistoryTable from '@/components/financials/DividendHistoryTable';
 import DividendGrowthChart from '@/components/financials/DividendGrowthChart';
 import FinancialsLoadingSkeleton from '@/components/financials/FinancialsLoadingSkeleton';
 import PriceChart from '@/components/charts/PriceChart';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 type Tab = 'valuation' | 'profile' | 'financials' | 'dividends' | 'price';
-
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'valuation', label: '估值' },
-  { key: 'profile', label: '公司資料' },
-  { key: 'financials', label: '財務報表' },
-  { key: 'dividends', label: '股息歷史' },
-  { key: 'price', label: '價格走勢' },
-];
 
 interface StockDetailClientProps {
   stock: Stock;
@@ -35,6 +28,15 @@ interface StockDetailClientProps {
 
 export default function StockDetailClient({ stock }: StockDetailClientProps) {
   const [tab, setTab] = useState<Tab>('valuation');
+  const { t } = useTranslation();
+
+  const TABS: { key: Tab; label: string }[] = [
+    { key: 'valuation', label: t('tabs.valuation') },
+    { key: 'profile', label: t('tabs.profile') },
+    { key: 'financials', label: t('tabs.financials') },
+    { key: 'dividends', label: t('tabs.dividends') },
+    { key: 'price', label: t('tabs.price') },
+  ];
 
   const { data: priceData, isLoading: priceLoading } = useStockPrice(stock.symbol);
   const { data: financials, isPending: finLoading } = useFinancials(
@@ -53,17 +55,17 @@ export default function StockDetailClient({ stock }: StockDetailClientProps) {
     <div>
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-gray-200 mb-6 overflow-x-auto">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-              tab === t.key
+              tab === tabItem.key
                 ? 'border-blue-600 text-blue-700'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            {t.label}
+            {tabItem.label}
           </button>
         ))}
       </div>
@@ -75,7 +77,7 @@ export default function StockDetailClient({ stock }: StockDetailClientProps) {
             {/* Live price header */}
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">現在股價</p>
+                <p className="text-xs text-gray-500">{t('stockDetail.currentPrice')}</p>
                 {priceLoading ? (
                   <div className="h-8 w-24 bg-gray-200 animate-pulse rounded mt-1" />
                 ) : (
@@ -85,7 +87,7 @@ export default function StockDetailClient({ stock }: StockDetailClientProps) {
                 )}
               </div>
               <div className="text-right text-xs text-gray-400">
-                <p>每 20 分鐘自動更新</p>
+                <p>{t('stockDetail.autoUpdate')}</p>
                 <p>{new Date().toLocaleDateString('zh-TW')}</p>
               </div>
             </div>
@@ -127,7 +129,7 @@ export default function StockDetailClient({ stock }: StockDetailClientProps) {
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-              <p className="text-gray-400 text-sm">財務數據無法取得</p>
+              <p className="text-gray-400 text-sm">{t('stockDetail.unavailable')}</p>
             </div>
           )}
         </div>

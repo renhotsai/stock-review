@@ -1,6 +1,7 @@
 'use client';
 
 import type { KeyMetrics } from '@/types/financials';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 function pct(n: number | null) {
   if (n == null) return '—';
@@ -15,7 +16,6 @@ function fmt(n: number | null, suffix = '', decimals = 2) {
 interface MetricItem {
   label: string;
   value: string;
-  hint?: string;
 }
 
 interface KeyMetricsGridProps {
@@ -23,6 +23,8 @@ interface KeyMetricsGridProps {
 }
 
 export default function KeyMetricsGrid({ metrics }: KeyMetricsGridProps) {
+  const { t } = useTranslation();
+
   if (!metrics) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -33,45 +35,45 @@ export default function KeyMetricsGrid({ metrics }: KeyMetricsGridProps) {
 
   const groups: { title: string; items: MetricItem[] }[] = [
     {
-      title: '估值指標',
+      title: t('financials.keyMetrics.valuation'),
       items: [
-        { label: 'P/E (本益比)', value: fmt(metrics.peRatio, 'x', 1) },
-        { label: 'P/B (市帳率)', value: fmt(metrics.pbRatio, 'x', 2) },
-        { label: 'P/S (市銷率)', value: fmt(metrics.psRatio, 'x', 2) },
-        { label: 'EV/EBITDA', value: fmt(metrics.evToEbitda, 'x', 1) },
+        { label: t('financials.keyMetrics.pe'), value: fmt(metrics.peRatio, 'x', 1) },
+        { label: t('financials.keyMetrics.pb'), value: fmt(metrics.pbRatio, 'x', 2) },
+        { label: t('financials.keyMetrics.ps'), value: fmt(metrics.psRatio, 'x', 2) },
+        { label: t('financials.keyMetrics.evEbitda'), value: fmt(metrics.evToEbitda, 'x', 1) },
       ],
     },
     {
-      title: '獲利能力',
+      title: t('financials.keyMetrics.profitability'),
       items: [
-        { label: 'ROE', value: pct(metrics.roe) },
-        { label: 'ROA', value: pct(metrics.roa) },
-        { label: '毛利率', value: pct(metrics.grossMargin) },
-        { label: '營業利潤率', value: pct(metrics.operatingMargin) },
-        { label: '淨利潤率', value: pct(metrics.netMargin) },
+        { label: t('financials.keyMetrics.roe'), value: pct(metrics.roe) },
+        { label: t('financials.keyMetrics.roa'), value: pct(metrics.roa) },
+        { label: t('financials.keyMetrics.grossMargin'), value: pct(metrics.grossMargin) },
+        { label: t('financials.keyMetrics.operatingMargin'), value: pct(metrics.operatingMargin) },
+        { label: t('financials.keyMetrics.netMargin'), value: pct(metrics.netMargin) },
       ],
     },
     {
-      title: '財務健康',
+      title: t('financials.keyMetrics.financialHealth'),
       items: [
-        { label: '負債權益比', value: fmt(metrics.debtToEquity, '', 2) },
-        { label: '流動比率', value: fmt(metrics.currentRatio, 'x', 2) },
-        { label: 'EPS', value: fmt(metrics.eps, '', 2) },
-        { label: '每股帳面價值', value: fmt(metrics.bookValue, '', 2) },
+        { label: t('financials.keyMetrics.debtToEquity'), value: fmt(metrics.debtToEquity, '', 2) },
+        { label: t('financials.keyMetrics.currentRatio'), value: fmt(metrics.currentRatio, 'x', 2) },
+        { label: t('financials.keyMetrics.eps'), value: fmt(metrics.eps, '', 2) },
+        { label: t('financials.keyMetrics.bookValue'), value: fmt(metrics.bookValue, '', 2) },
       ],
     },
     {
-      title: '股息',
+      title: t('financials.keyMetrics.dividends'),
       items: [
-        { label: '股息殖利率', value: pct(metrics.dividendYield) },
-        { label: '配息率', value: pct(metrics.payoutRatio) },
+        { label: t('financials.keyMetrics.dividendYield'), value: pct(metrics.dividendYield) },
+        { label: t('financials.keyMetrics.payoutRatio'), value: pct(metrics.payoutRatio) },
       ],
     },
   ];
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">關鍵指標</h3>
+      <h3 className="text-lg font-bold text-gray-900 mb-4">{t('financials.keyMetrics.title')}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {groups.map((group) => (
           <div key={group.title}>

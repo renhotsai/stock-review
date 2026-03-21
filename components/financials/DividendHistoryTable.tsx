@@ -7,26 +7,29 @@ import {
   countConsecutivePayingYears,
   detectFrequency,
 } from '@/lib/dividend-utils';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface DividendHistoryTableProps {
   records: DividendRecord[];
   ticker: string;
 }
 
-const FREQ_LABELS: Record<string, string> = {
-  monthly: '月配息',
-  quarterly: '季配息',
-  'semi-annual': '半年配息',
-  annual: '年配息',
-  irregular: '不定期',
-};
-
 export default function DividendHistoryTable({ records, ticker }: DividendHistoryTableProps) {
+  const { t } = useTranslation();
+
+  const freqKey: Record<string, string> = {
+    monthly: 'financials.dividendHistory.monthly',
+    quarterly: 'financials.dividendHistory.quarterly',
+    'semi-annual': 'financials.dividendHistory.semiAnnual',
+    annual: 'financials.dividendHistory.annual',
+    irregular: 'financials.dividendHistory.irregular',
+  };
+
   if (records.length === 0) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <h3 className="text-base font-bold text-gray-900 mb-3">股息歷史</h3>
-        <p className="text-sm text-gray-400">{ticker} 沒有股息紀錄</p>
+        <h3 className="text-base font-bold text-gray-900 mb-3">{t('financials.dividendHistory.title')}</h3>
+        <p className="text-sm text-gray-400">{t('financials.dividendHistory.noRecords', { ticker })}</p>
       </div>
     );
   }
@@ -40,26 +43,26 @@ export default function DividendHistoryTable({ records, ticker }: DividendHistor
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-      <h3 className="text-base font-bold text-gray-900 mb-4">股息歷史</h3>
+      <h3 className="text-base font-bold text-gray-900 mb-4">{t('financials.dividendHistory.title')}</h3>
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500">連續配息年數</p>
+          <p className="text-xs text-gray-500">{t('financials.dividendHistory.consecutiveYears')}</p>
           <p className="text-xl font-bold text-blue-700">{consecutiveYears}年</p>
         </div>
         <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500">配息頻率</p>
-          <p className="text-lg font-bold text-gray-800">{FREQ_LABELS[frequency]}</p>
+          <p className="text-xs text-gray-500">{t('financials.dividendHistory.frequency')}</p>
+          <p className="text-lg font-bold text-gray-800">{t(freqKey[frequency] ?? 'financials.dividendHistory.irregular')}</p>
         </div>
         <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500">3年CAGR</p>
+          <p className="text-xs text-gray-500">{t('financials.dividendHistory.cagr3')}</p>
           <p className="text-xl font-bold text-green-700">
             {cagr3 != null ? `${(cagr3 * 100).toFixed(1)}%` : '—'}
           </p>
         </div>
         <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500">5年CAGR</p>
+          <p className="text-xs text-gray-500">{t('financials.dividendHistory.cagr5')}</p>
           <p className="text-xl font-bold text-green-700">
             {cagr5 != null ? `${(cagr5 * 100).toFixed(1)}%` : '—'}
           </p>
@@ -71,9 +74,9 @@ export default function DividendHistoryTable({ records, ticker }: DividendHistor
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-4 py-2 text-left font-semibold text-gray-600">年份</th>
-              <th className="px-4 py-2 text-right font-semibold text-gray-600">年化股息</th>
-              <th className="px-4 py-2 text-right font-semibold text-gray-600">次數</th>
+              <th className="px-4 py-2 text-left font-semibold text-gray-600">{t('financials.dividendHistory.year')}</th>
+              <th className="px-4 py-2 text-right font-semibold text-gray-600">{t('financials.dividendHistory.annualDividend')}</th>
+              <th className="px-4 py-2 text-right font-semibold text-gray-600">{t('financials.dividendHistory.count')}</th>
             </tr>
           </thead>
           <tbody>
