@@ -355,7 +355,7 @@ export default function StockForm({ initialData, mode }: Props) {
   const selectClass = inputClass;
 
   return (
-    <div className="max-w-2xl">
+    <div>
       {/* Step indicators — hidden on step 1 create mode */}
       {(mode === 'edit' || step > 1) && (
         <div className="flex items-center gap-2 mb-6">
