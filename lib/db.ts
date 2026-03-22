@@ -221,6 +221,12 @@ export async function setupDatabase() {
   // Add password column to users if it doesn't exist yet (idempotent)
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT`;
 
+  // Stripe subscription columns
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'free'`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_period_end TIMESTAMPTZ`;
+
   // Add user_id to stocks for multi-user support
   await sql`ALTER TABLE stocks ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`;
 

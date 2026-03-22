@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { auth } from '@/auth';
+import { getStockLimit } from '@/lib/subscription-config';
 
 export async function GET() {
   try {
@@ -38,6 +39,19 @@ export async function POST(request: Request) {
 
     if (!symbol) {
       return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
+    }
+
+    // Enforce subscription stock limit (skip for updates — symbol already exists)
+    const [existing] = await sql`
+      SELECT id FROM stocks WHERE symbol = ${symbol.toUpperCase()} AND user_id = ${userId}
+    `;
+    if (!existing) {
+      const [countRow] = await sql`SELECT COUNT(*) AS count FROM stocks WHERE user_id = ${userId}`;
+      const [userRow] = await sql`SELECT subscription_status FROM users WHERE id = ${userId}`;
+      const limit = getStockLimit(userRow?.subscription_status as string);
+      if (Number(countRow?.count ?? 0) >= limit) {
+        return NextResponse.json({ error: 'limit_reached', limit }, { status: 403 });
+      }
     }
 
     const [stock] = await sql`

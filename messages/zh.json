@@ -2,7 +2,36 @@
   "nav": {
     "addStock": "+ 新增股票",
     "logout": "登出",
-    "login": "登入"
+    "login": "登入",
+    "upgrade": "升級",
+    "donate": "捐贈 $1"
+  },
+  "pricing": {
+    "title": "方案與定價",
+    "subtitle": "選擇適合您的方案",
+    "freePlan": "免費版",
+    "proPlan": "專業版",
+    "freePrice": "免費",
+    "proPrice": "$10 加幣 / 月",
+    "freeLimit": "最多追蹤 3 支股票",
+    "proLimit": "最多追蹤 10 支股票",
+    "allFeatures": "包含所有功能",
+    "currentPlan": "目前方案",
+    "upgrade": "升級至專業版",
+    "manageSubscription": "管理訂閱",
+    "donateTitle": "支持本專案",
+    "donateDesc": "如果您覺得這個工具有用，歡迎請我們喝杯咖啡。",
+    "donate": "捐贈 $1 加幣",
+    "upgradePromptTitle": "已達股票數量上限",
+    "upgradePromptDesc": "您已達到免費版的 {limit} 支股票上限。升級至專業版可追蹤最多 10 支股票。",
+    "upgradeNow": "立即升級",
+    "viewPlans": "查看方案",
+    "stockCount": "{count} / {limit} 支股票",
+    "subscriptionActive": "專業版已啟用",
+    "subscriptionPastDue": "付款逾期，請更新付款資訊",
+    "perMonth": "/月",
+    "successSubscribed": "您已成功升級至專業版！",
+    "successDonated": "感謝您的捐贈！"
   },
   "dashboard": {
     "title": "股票追蹤清單",

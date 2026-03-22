@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import StockTable from '@/components/StockTable';
 import StockSearch from '@/components/StockSearch';
+import UpgradePrompt from '@/components/UpgradePrompt';
 import type { Stock } from '@/lib/db';
 import { useTranslation } from '@/contexts/LanguageContext';
 
@@ -11,10 +12,14 @@ interface DashboardViewProps {
   error?: string;
   highScoreCount: number;
   totalCount: number;
+  stockLimit: number;
+  subscriptionStatus: string;
 }
 
-export default function DashboardView({ stocks, error, highScoreCount, totalCount }: DashboardViewProps) {
+export default function DashboardView({ stocks, error, highScoreCount, totalCount, stockLimit, subscriptionStatus }: DashboardViewProps) {
   const { t } = useTranslation();
+  const atLimit = totalCount >= stockLimit;
+  const isPro = subscriptionStatus === 'active';
 
   return (
     <div>
@@ -26,7 +31,13 @@ export default function DashboardView({ stocks, error, highScoreCount, totalCoun
           </p>
         </div>
         <StockSearch />
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-3 flex-wrap items-center">
+          {/* Stock count badge */}
+          <span className={`text-sm px-3 py-1.5 rounded-lg font-medium ${atLimit ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>
+            {t('pricing.stockCount', { count: totalCount, limit: stockLimit })}
+            {isPro && <span className="ml-1 text-xs text-blue-600">Pro</span>}
+          </span>
+
           {highScoreCount > 0 && (
             <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm font-medium">
               {t('dashboard.highScore', { count: highScoreCount })}
@@ -47,6 +58,8 @@ export default function DashboardView({ stocks, error, highScoreCount, totalCoun
           <p className="text-sm text-red-500 mt-0.5">{error}</p>
         </div>
       )}
+
+      {atLimit && !isPro && <UpgradePrompt limit={stockLimit} />}
 
       {/* Color legend */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
