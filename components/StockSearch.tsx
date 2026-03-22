@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 type SearchResult = { symbol: string; name: string; exchange: string };
 
 export default function StockSearch() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,7 @@ export default function StockSearch() {
       setOpen(false);
       return;
     }
-    const t = setTimeout(async () => {
+    const t_id = setTimeout(async () => {
       setLoading(true);
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -33,7 +35,7 @@ export default function StockSearch() {
         setLoading(false);
       }
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(t_id);
   }, [query]);
 
   // Close on outside click
@@ -78,11 +80,11 @@ export default function StockSearch() {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="輸入股票代號或公司名稱..."
+          placeholder={t('stockSearch.placeholder')}
           className="w-full border border-gray-300 rounded-lg pl-4 pr-20 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         />
         {loading ? (
-          <span className="absolute right-3 top-2 text-xs text-gray-400">搜尋中...</span>
+          <span className="absolute right-3 top-2 text-xs text-gray-400">{t('stockSearch.searching')}</span>
         ) : (
           <span className="absolute right-3 top-2 text-xs text-gray-400 pointer-events-none">
             🔍
@@ -113,7 +115,7 @@ export default function StockSearch() {
                 }}
                 className="shrink-0 text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 border border-blue-200"
               >
-                新增
+                {t('stockSearch.add')}
               </button>
             </li>
           ))}

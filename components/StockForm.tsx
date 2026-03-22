@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { calculateValuation } from '@/lib/valuation';
 import type { Stock } from '@/lib/db';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 // ── Zod Schema ────────────────────────────────────────────────
 const stockSchema = z.object({
@@ -36,81 +37,6 @@ const stockSchema = z.object({
 });
 
 type FormData = z.infer<typeof stockSchema>;
-
-// ── Dropdown options ──────────────────────────────────────────
-const FACTS_FIELDS: {
-  key: keyof FormData;
-  label: string;
-  options: { value: string; label: string }[];
-}[] = [
-  {
-    key: 'eps', label: 'EPS 穩定增長',
-    options: [{ value: 'EMPTY', label: '— 未評估 —' }, { value: 'YES', label: '✓ 是' }, { value: 'NO', label: '✗ 否' }],
-  },
-  {
-    key: 'fcf', label: '自由現金流 (FCF)',
-    options: [{ value: 'EMPTY', label: '— 未評估 —' }, { value: 'YES', label: '✓ 正值' }, { value: 'NO', label: '✗ 負值' }],
-  },
-  {
-    key: 'roe', label: 'ROE > 15%',
-    options: [{ value: 'EMPTY', label: '— 未評估 —' }, { value: 'YES', label: '✓ 是' }, { value: 'NO', label: '✗ 否' }],
-  },
-  {
-    key: 'int_cov', label: '利息覆蓋率',
-    options: [
-      { value: 'EMPTY', label: '— 未評估 —' },
-      { value: 'ABOVE_10', label: '> 10x' },
-      { value: 'ABOVE_4', label: '> 4x' },
-      { value: 'NO_DEBT', label: '無負債' },
-      { value: 'NO', label: '不足' },
-    ],
-  },
-  {
-    key: 'moat', label: '護城河',
-    options: [
-      { value: 'EMPTY', label: '— 未評估 —' },
-      { value: 'TWO_MOATS', label: '兩項護城河' },
-      { value: 'ONE_MOAT', label: '一項護城河' },
-      { value: 'NO', label: '無護城河' },
-    ],
-  },
-  {
-    key: 'net_margin', label: '淨利潤率',
-    options: [
-      { value: 'EMPTY', label: '— 未評估 —' },
-      { value: 'ABOVE_20', label: '> 20%' },
-      { value: 'ABOVE_10', label: '> 10%' },
-      { value: 'INCREASING', label: '持續增長' },
-      { value: 'NO', label: '不達標' },
-    ],
-  },
-  {
-    key: 'has_dividends', label: '派發股息',
-    options: [{ value: 'EMPTY', label: '— 未評估 —' }, { value: 'YES', label: '✓ 是' }, { value: 'NO', label: '✗ 否' }],
-  },
-  {
-    key: 'policy', label: '股東友善政策',
-    options: [{ value: 'EMPTY', label: '— 未評估 —' }, { value: 'YES', label: '✓ 是' }, { value: 'NO', label: '✗ 否' }],
-  },
-  {
-    key: 'tech_risk', label: '科技顛覆風險',
-    options: [
-      { value: 'EMPTY', label: '— 未評估 —' },
-      { value: 'LOW', label: '低' },
-      { value: 'MEDIUM', label: '中' },
-      { value: 'HIGH', label: '高' },
-    ],
-  },
-  {
-    key: 'mgmt_risk', label: '管理層風險',
-    options: [
-      { value: 'EMPTY', label: '— 未評估 —' },
-      { value: 'LOW', label: '低' },
-      { value: 'MEDIUM', label: '中' },
-      { value: 'HIGH', label: '高' },
-    ],
-  },
-];
 
 // ── Props ─────────────────────────────────────────────────────
 type InitialData = Partial<FormData> & { id?: number };
@@ -148,6 +74,7 @@ import type { StockAIPayload } from '@/types/stock';
 // ── Component ─────────────────────────────────────────────────
 export default function StockForm({ initialData, mode }: Props) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [step, setStep] = useState(mode === 'edit' ? 2 : 1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -155,11 +82,105 @@ export default function StockForm({ initialData, mode }: Props) {
   const [fetchError, setFetchError] = useState('');
   const [aiPayload, setAiPayload] = useState<StockAIPayload | null>(null);
 
+  // ── FACTS fields (computed inside component to use t()) ──────
+  const FACTS_FIELDS: {
+    key: keyof FormData;
+    label: string;
+    options: { value: string; label: string }[];
+  }[] = [
+    {
+      key: 'eps', label: t('stockForm.facts.eps'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'YES', label: t('stockForm.facts.yes') },
+        { value: 'NO', label: t('stockForm.facts.no') },
+      ],
+    },
+    {
+      key: 'fcf', label: t('stockForm.facts.fcf'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'YES', label: t('stockForm.facts.positive') },
+        { value: 'NO', label: t('stockForm.facts.negative') },
+      ],
+    },
+    {
+      key: 'roe', label: t('stockForm.facts.roe'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'YES', label: t('stockForm.facts.yes') },
+        { value: 'NO', label: t('stockForm.facts.no') },
+      ],
+    },
+    {
+      key: 'int_cov', label: t('stockForm.facts.intCov'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'ABOVE_10', label: t('stockForm.facts.above10') },
+        { value: 'ABOVE_4', label: t('stockForm.facts.above4') },
+        { value: 'NO_DEBT', label: t('stockForm.facts.noDebt') },
+        { value: 'NO', label: t('stockForm.facts.insufficient') },
+      ],
+    },
+    {
+      key: 'moat', label: t('stockForm.facts.moat'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'TWO_MOATS', label: t('stockForm.facts.twoMoats') },
+        { value: 'ONE_MOAT', label: t('stockForm.facts.oneMoat') },
+        { value: 'NO', label: t('stockForm.facts.noMoat') },
+      ],
+    },
+    {
+      key: 'net_margin', label: t('stockForm.facts.netMargin'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'ABOVE_20', label: t('stockForm.facts.above20') },
+        { value: 'ABOVE_10', label: t('stockForm.facts.above10pct') },
+        { value: 'INCREASING', label: t('stockForm.facts.increasing') },
+        { value: 'NO', label: t('stockForm.facts.belowStandard') },
+      ],
+    },
+    {
+      key: 'has_dividends', label: t('stockForm.facts.hasDividends'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'YES', label: t('stockForm.facts.yes') },
+        { value: 'NO', label: t('stockForm.facts.no') },
+      ],
+    },
+    {
+      key: 'policy', label: t('stockForm.facts.policy'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'YES', label: t('stockForm.facts.yes') },
+        { value: 'NO', label: t('stockForm.facts.no') },
+      ],
+    },
+    {
+      key: 'tech_risk', label: t('stockForm.facts.techRisk'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'LOW', label: t('stockForm.facts.low') },
+        { value: 'MEDIUM', label: t('stockForm.facts.medium') },
+        { value: 'HIGH', label: t('stockForm.facts.high') },
+      ],
+    },
+    {
+      key: 'mgmt_risk', label: t('stockForm.facts.mgmtRisk'),
+      options: [
+        { value: 'EMPTY', label: t('stockForm.facts.emptyOption') },
+        { value: 'LOW', label: t('stockForm.facts.low') },
+        { value: 'MEDIUM', label: t('stockForm.facts.medium') },
+        { value: 'HIGH', label: t('stockForm.facts.high') },
+      ],
+    },
+  ];
+
   const {
     register,
     handleSubmit,
     watch,
-    setValue,
     getValues,
     reset,
     control,
@@ -219,7 +240,7 @@ export default function StockForm({ initialData, mode }: Props) {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        setFetchError(errData.error ?? '查詢失敗，請稍後再試');
+        setFetchError(errData.error ?? t('stockForm.step1.queryFailed'));
         setProcessing(false);
         return;
       }
@@ -266,7 +287,7 @@ export default function StockForm({ initialData, mode }: Props) {
       setProcessing(false);
       setStep(2);
     } catch {
-      setFetchError('載入失敗，請稍後再試');
+      setFetchError(t('stockForm.step1.loadFailed'));
       setProcessing(false);
     }
   }
@@ -351,7 +372,7 @@ export default function StockForm({ initialData, mode }: Props) {
                   : 'bg-gray-100 text-gray-500'
               }`}
             >
-              {s === 2 ? '① F.A.C.T.S' : '② 估值輸入'}
+              {s === 2 ? t('stockForm.stepIndicator.facts') : t('stockForm.stepIndicator.valuation')}
             </button>
           ))}
         </div>
@@ -368,8 +389,8 @@ export default function StockForm({ initialData, mode }: Props) {
             {!processing ? (
               <div className="flex flex-col items-center py-8 gap-6">
                 <div className="text-center">
-                  <h2 className="text-lg font-semibold text-gray-800">輸入股票代號</h2>
-                  <p className="text-sm text-gray-500 mt-1">AI 將自動查詢所有財務數據</p>
+                  <h2 className="text-lg font-semibold text-gray-800">{t('stockForm.step1.title')}</h2>
+                  <p className="text-sm text-gray-500 mt-1">{t('stockForm.step1.subtitle')}</p>
                 </div>
                 <div className="w-full max-w-xs space-y-3">
                   <input
@@ -386,7 +407,7 @@ export default function StockForm({ initialData, mode }: Props) {
                   onClick={handleLookup}
                   className="bg-blue-600 text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
-                  AI 分析 →
+                  {t('stockForm.step1.analyzeButton')}
                 </button>
               </div>
             ) : (
@@ -396,11 +417,11 @@ export default function StockForm({ initialData, mode }: Props) {
                   <p className="text-base font-semibold text-gray-700">
                     {watchedData.symbol.toUpperCase()}
                   </p>
-                  <p className="text-sm text-gray-400 mt-0.5">AI 正在查詢財務數據及分析中…</p>
+                  <p className="text-sm text-gray-400 mt-0.5">{t('stockForm.step1.processing')}</p>
                 </div>
                 <div className="flex items-center gap-3 text-blue-600">
                   <span className="inline-block animate-spin text-2xl">⏳</span>
-                  <span className="text-sm">這可能需要 15–30 秒</span>
+                  <span className="text-sm">{t('stockForm.step1.processingNote')}</span>
                 </div>
               </div>
             )}
@@ -411,7 +432,7 @@ export default function StockForm({ initialData, mode }: Props) {
         {step === 2 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-800">F.A.C.T.S 評估標準</h2>
+              <h2 className="text-base font-semibold text-gray-800">{t('stockForm.step2.title')}</h2>
               <div className="flex items-center gap-2">
                 {aiPayload && (
                   <span className={`text-xs px-2 py-1 rounded ${
@@ -419,8 +440,8 @@ export default function StockForm({ initialData, mode }: Props) {
                     aiPayload.confidence === 'Medium' ? 'text-yellow-700 bg-yellow-50' :
                                                         'text-orange-700 bg-orange-50'
                   }`}>
-                    {aiPayload.confidence === 'High' ? '✓ 高信心' :
-                     aiPayload.confidence === 'Medium' ? '～ 中信心' : '⚠ 低信心'}
+                    {aiPayload.confidence === 'High' ? t('stockForm.step2.highConfidence') :
+                     aiPayload.confidence === 'Medium' ? t('stockForm.step2.mediumConfidence') : t('stockForm.step2.lowConfidence')}
                   </span>
                 )}
                 {mode === 'create' && watchedData.name && (
@@ -438,37 +459,43 @@ export default function StockForm({ initialData, mode }: Props) {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span>
                     {aiPayload.currentPrice != null
-                      ? `📈 AI 查詢股價：${aiPayload.currency} ${aiPayload.currentPrice.toFixed(2)} （${aiPayload.priceAsOf}）`
-                      : '股價未能取得'}
+                      ? t('stockForm.step2.aiPrice', {
+                          currency: aiPayload.currency ?? '',
+                          price: aiPayload.currentPrice.toFixed(2),
+                          date: aiPayload.priceAsOf ?? '',
+                        })
+                      : t('stockForm.step2.priceUnavailable')}
                   </span>
                   {aiPayload.confidence === 'Low' && (
-                    <span className="text-xs font-medium">⚠ 數據可能超過 12 個月，建議人工核實</span>
+                    <span className="text-xs font-medium">{t('stockForm.step2.lowConfidenceWarning')}</span>
                   )}
                 </div>
                 {/* Price staleness warning */}
                 {aiPayload.priceAsOf && (() => {
                   const days = Math.floor((Date.now() - new Date(aiPayload.priceAsOf).getTime()) / 86400000);
                   return days > 3 ? (
-                    <p className="mt-1 text-xs text-orange-600">⚠ 股價已有 {days} 天未更新，建議重新分析</p>
+                    <p className="mt-1 text-xs text-orange-600">
+                      {t('stockForm.step2.stalePrice', { days })}
+                    </p>
                   ) : null;
                 })()}
               </div>
             )}
             {/* Stock type selector */}
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">股票類型</span>
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{t('stockForm.step2.stockType')}</span>
               <Controller
                 name="type"
                 control={control}
                 render={({ field }) => (
                   <select {...field} className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="Growth">Growth 成長股</option>
-                    <option value="Dividends">Dividends 股息股</option>
-                    <option value="Asset">Asset 資產股</option>
+                    <option value="Growth">{t('stockForm.step2.growthStock')}</option>
+                    <option value="Dividends">{t('stockForm.step2.dividendStock')}</option>
+                    <option value="Asset">{t('stockForm.step2.assetStock')}</option>
                   </select>
                 )}
               />
-              <span className="text-xs text-gray-400">影響估值方式</span>
+              <span className="text-xs text-gray-400">{t('stockForm.step2.typeEffect')}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {FACTS_FIELDS.map((field) => (
@@ -496,7 +523,7 @@ export default function StockForm({ initialData, mode }: Props) {
                   onClick={() => { setStep(1); setProcessing(false); setAiPayload(null); }}
                   className="px-6 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
-                  ← 重新查詢
+                  {t('stockForm.step2.requery')}
                 </button>
               ) : (
                 <div />
@@ -506,7 +533,7 @@ export default function StockForm({ initialData, mode }: Props) {
                 onClick={() => setStep(3)}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
               >
-                下一步 →
+                {t('stockForm.step2.next')}
               </button>
             </div>
           </div>
@@ -516,7 +543,7 @@ export default function StockForm({ initialData, mode }: Props) {
         {step === 3 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-800">估值輸入</h2>
+              <h2 className="text-base font-semibold text-gray-800">{t('stockForm.step3.title')}</h2>
               {mode === 'create' && (
                 <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
                   {watchedData.name || watchedData.symbol} · {watchedData.type}
@@ -528,11 +555,11 @@ export default function StockForm({ initialData, mode }: Props) {
               {selectedType === 'Growth' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">EPS (每股盈利)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('stockForm.step3.eps')}</label>
                     <input {...register('eps_value')} type="number" step="0.01" placeholder="e.g. 6.50" className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">成長倍數 (Growth Rate)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('stockForm.step3.growthRate')}</label>
                     <input {...register('growth_rate')} type="number" step="0.1" placeholder="e.g. 15" className={inputClass} />
                   </div>
                 </>
@@ -541,13 +568,13 @@ export default function StockForm({ initialData, mode }: Props) {
               {selectedType === 'Dividends' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">年化股息 (Expected Dividend)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('stockForm.step3.annualDividend')}</label>
                     <input {...register('expected_dividend')} type="number" step="0.01" placeholder="e.g. 2.80" className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">目標殖利率 (Return Rate)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('stockForm.step3.returnRate')}</label>
                     <input {...register('dividend_return_rate')} type="number" step="0.001" placeholder="e.g. 0.04" className={inputClass} />
-                    <p className="text-xs text-gray-400 mt-1">預設 4% = 0.04</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('stockForm.step3.returnRateHint')}</p>
                   </div>
                 </>
               )}
@@ -555,23 +582,23 @@ export default function StockForm({ initialData, mode }: Props) {
               {selectedType === 'Asset' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">每股帳面價值 (BVPS)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('stockForm.step3.bvps')}</label>
                     <input {...register('bvps')} type="number" step="0.01" placeholder="e.g. 120.00" className={inputClass} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">折扣因子 (Discount Factor)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('stockForm.step3.discountFactor')}</label>
                     <input {...register('discount_factor')} type="number" step="0.01" placeholder="e.g. 0.8" className={inputClass} />
-                    <p className="text-xs text-gray-400 mt-1">預設 0.8 (80%)</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('stockForm.step3.discountFactorHint')}</p>
                   </div>
                 </>
               )}
 
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('stockForm.step3.notes')}</label>
                 <textarea
                   {...register('notes')}
                   rows={3}
-                  placeholder="投資理由、風險提示…"
+                  placeholder={t('stockForm.step3.notesPlaceholder')}
                   className={`${inputClass} resize-none`}
                 />
               </div>
@@ -580,20 +607,20 @@ export default function StockForm({ initialData, mode }: Props) {
             {/* Live Preview */}
             {preview && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs font-semibold text-blue-700 mb-2">估值預覽</p>
+                <p className="text-xs font-semibold text-blue-700 mb-2">{t('stockForm.step3.previewTitle')}</p>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-xs text-gray-500">信心分數</p>
+                    <p className="text-xs text-gray-500">{t('stockForm.step3.confidenceScore')}</p>
                     <p className="text-lg font-bold text-blue-700">{preview.score.toFixed(1)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">合理買入價</p>
+                    <p className="text-xs text-gray-500">{t('stockForm.step3.fairValue')}</p>
                     <p className="text-lg font-bold text-green-700">
                       {preview.fairValue != null ? `$${preview.fairValue.toFixed(2)}` : '—'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">重新估值</p>
+                    <p className="text-xs text-gray-500">{t('stockForm.step3.reviewValue')}</p>
                     <p className="text-lg font-bold text-yellow-700">
                       {preview.reviewValue != null ? `$${preview.reviewValue.toFixed(2)}` : '—'}
                     </p>
@@ -608,21 +635,21 @@ export default function StockForm({ initialData, mode }: Props) {
                 onClick={() => setStep(2)}
                 className="px-6 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
               >
-                ← 上一步
+                {t('stockForm.step3.back')}
               </button>
               <div className="flex gap-3">
                 <a
                   href="/"
                   className="px-6 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
-                  取消
+                  {t('stockForm.step3.cancel')}
                 </a>
                 <button
                   type="submit"
                   disabled={loading}
                   className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {loading ? '儲存中…' : mode === 'edit' ? '更新股票' : '新增股票'}
+                  {loading ? t('stockForm.step3.saving') : mode === 'edit' ? t('stockForm.step3.updateStock') : t('stockForm.step3.addStock')}
                 </button>
               </div>
             </div>

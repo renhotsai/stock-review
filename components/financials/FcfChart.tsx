@@ -4,6 +4,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import type { AnnualFinancial } from '@/types/financials';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 function fmtB(n: number): string {
   const b = n / 1e9;
@@ -30,6 +31,8 @@ interface FcfChartProps {
 }
 
 export default function FcfChart({ annuals }: FcfChartProps) {
+  const { t } = useTranslation();
+
   const data = [...annuals]
     .sort((a, b) => a.year - b.year)
     .filter((a) => a.freeCashFlow != null)
@@ -37,7 +40,7 @@ export default function FcfChart({ annuals }: FcfChartProps) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-      <h3 className="text-base font-bold text-gray-900 mb-4">自由現金流 (FCF)</h3>
+      <h3 className="text-base font-bold text-gray-900 mb-4">{t('financials.charts.fcf')}</h3>
       <ResponsiveContainer width="100%" height={200}>
         <AreaChart data={data} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
           <defs>

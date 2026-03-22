@@ -1,6 +1,7 @@
 'use client';
 
 import type { CompanyProfile, KeyMetrics } from '@/types/financials';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 function fmt(n: number | null | undefined, decimals = 2) {
   if (n == null) return '—';
@@ -22,6 +23,8 @@ interface CompanyHeaderProps {
 }
 
 export default function CompanyHeader({ profile, metrics, currentPrice }: CompanyHeaderProps) {
+  const { t } = useTranslation();
+
   if (!profile) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -80,19 +83,19 @@ export default function CompanyHeader({ profile, metrics, currentPrice }: Compan
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100">
         <div>
-          <p className="text-xs text-gray-500">市值</p>
+          <p className="text-xs text-gray-500">{t('financials.companyHeader.marketCap')}</p>
           <p className="font-semibold text-gray-900">{fmtLarge(profile.marketCap)}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">P/E 本益比</p>
+          <p className="text-xs text-gray-500">{t('financials.companyHeader.pe')}</p>
           <p className="font-semibold text-gray-900">{fmt(metrics?.peRatio, 1)}x</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Beta</p>
+          <p className="text-xs text-gray-500">{t('financials.companyHeader.beta')}</p>
           <p className="font-semibold text-gray-900">{fmt(metrics?.beta, 2)}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">員工人數</p>
+          <p className="text-xs text-gray-500">{t('financials.companyHeader.employees')}</p>
           <p className="font-semibold text-gray-900">
             {profile.employees ? profile.employees.toLocaleString() : '—'}
           </p>

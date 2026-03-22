@@ -1,0 +1,302 @@
+{
+  "nav": {
+    "addStock": "+ 新增股票",
+    "logout": "登出",
+    "login": "登入"
+  },
+  "dashboard": {
+    "title": "股票追蹤清單",
+    "subtitle": "追蹤 {count} 支美股 · 股價每 20 分鐘更新",
+    "highScore": "{count} 支高信心分數 (≥ 7.5)",
+    "addStock": "+ 新增股票",
+    "errorTitle": "⚠ 發生錯誤",
+    "priceRangeLabel": "價格區間說明：",
+    "buyZone": "買入區間",
+    "buyZoneDesc": "· 現價 ≤ 合理買入價",
+    "fairZone": "合理區間",
+    "fairZoneDesc": "· 合理買入價 < 現價 ≤ 重新估值",
+    "overvalued": "高估",
+    "overvaluedDesc": "· 現價 > 重新估值",
+    "disclaimer": "股價資料來自 Yahoo Finance，可能有 15 分鐘延遲。股價每 20 分鐘由瀏覽器自動更新。"
+  },
+  "common": {
+    "loading": "載入中…",
+    "edit": "編輯",
+    "delete": "刪除",
+    "cancel": "取消",
+    "back": "← 返回",
+    "home": "首頁",
+    "details": "詳情",
+    "saving": "儲存中…",
+    "error": "⚠ 發生錯誤",
+    "noData": "—",
+    "addStock": "+ 新增股票",
+    "lookup": "查詢"
+  },
+  "tabs": {
+    "valuation": "估值",
+    "profile": "公司資料",
+    "financials": "財務報表",
+    "dividends": "股息歷史",
+    "price": "價格走勢"
+  },
+  "stockTable": {
+    "empty": "尚無股票，請先新增",
+    "addFirst": "新增第一支股票",
+    "symbol": "股票代碼",
+    "name": "名稱",
+    "type": "類型",
+    "score": "信心分數",
+    "currentPrice": "現在股價",
+    "fairValue": "合理買入價",
+    "reviewValue": "重新估值",
+    "status": "狀態",
+    "actions": "操作",
+    "deleteConfirm": "確定要刪除 {symbol} 嗎？"
+  },
+  "stockRow": {
+    "loading": "載入中…",
+    "details": "詳情",
+    "edit": "編輯",
+    "delete": "刪除",
+    "deleting": "…"
+  },
+  "priceStatus": {
+    "undervalued": "買入區間",
+    "fair": "合理區間",
+    "overvalued": "高估",
+    "unknown": "—"
+  },
+  "stockDetail": {
+    "home": "首頁",
+    "edit": "編輯",
+    "back": "← 返回",
+    "autoUpdate": "每 20 分鐘自動更新",
+    "currentPrice": "現在股價",
+    "unavailable": "財務數據無法取得"
+  },
+  "newStockPage": {
+    "title": "新增股票",
+    "subtitle": "加入一支美股到追蹤清單"
+  },
+  "editPage": {
+    "title": "編輯股票 — {symbol}",
+    "subtitle": "更新 F.A.C.T.S 評估和估值資訊"
+  },
+  "lookupPage": {
+    "home": "首頁",
+    "lookup": "查詢",
+    "addStock": "+ 新增股票"
+  },
+  "auth": {
+    "signin": {
+      "title": "登入",
+      "email": "Email",
+      "password": "密碼",
+      "invalidCredentials": "Email 或密碼不正確",
+      "signingIn": "登入中...",
+      "submit": "登入",
+      "noAccount": "還沒有帳號？",
+      "register": "立即註冊"
+    },
+    "register": {
+      "title": "建立帳號",
+      "name": "姓名（可選）",
+      "namePlaceholder": "您的名稱",
+      "email": "Email",
+      "password": "密碼",
+      "passwordPlaceholder": "至少 6 個字元",
+      "failed": "註冊失敗",
+      "error": "發生錯誤，請稍後再試",
+      "registering": "註冊中...",
+      "submit": "建立帳號",
+      "hasAccount": "已有帳號？",
+      "signin": "立即登入"
+    }
+  },
+  "stockForm": {
+    "step1": {
+      "title": "輸入股票代號",
+      "subtitle": "AI 將自動查詢所有財務數據",
+      "analyzeButton": "AI 分析 →",
+      "queryFailed": "查詢失敗，請稍後再試",
+      "loadFailed": "載入失敗，請稍後再試",
+      "processing": "AI 正在查詢財務數據及分析中…",
+      "processingNote": "這可能需要 15–30 秒"
+    },
+    "step2": {
+      "title": "F.A.C.T.S 評估標準",
+      "highConfidence": "✓ 高信心",
+      "mediumConfidence": "～ 中信心",
+      "lowConfidence": "⚠ 低信心",
+      "priceUnavailable": "股價未能取得",
+      "aiPrice": "📈 AI 查詢股價：{currency} {price} （{date}）",
+      "lowConfidenceWarning": "⚠ 數據可能超過 12 個月，建議人工核實",
+      "stalePrice": "⚠ 股價已有 {days} 天未更新，建議重新分析",
+      "stockType": "股票類型",
+      "typeEffect": "影響估值方式",
+      "growthStock": "Growth 成長股",
+      "dividendStock": "Dividends 股息股",
+      "assetStock": "Asset 資產股",
+      "requery": "← 重新查詢",
+      "next": "下一步 →"
+    },
+    "step3": {
+      "title": "估值輸入",
+      "eps": "EPS (每股盈利)",
+      "growthRate": "成長倍數 (Growth Rate)",
+      "annualDividend": "年化股息 (Expected Dividend)",
+      "returnRate": "目標殖利率 (Return Rate)",
+      "returnRateHint": "預設 4% = 0.04",
+      "bvps": "每股帳面價值 (BVPS)",
+      "discountFactor": "折扣因子 (Discount Factor)",
+      "discountFactorHint": "預設 0.8 (80%)",
+      "notes": "備註",
+      "notesPlaceholder": "投資理由、風險提示…",
+      "previewTitle": "估值預覽",
+      "confidenceScore": "信心分數",
+      "fairValue": "合理買入價",
+      "reviewValue": "重新估值",
+      "back": "← 上一步",
+      "cancel": "取消",
+      "saving": "儲存中…",
+      "addStock": "新增股票",
+      "updateStock": "更新股票"
+    },
+    "stepIndicator": {
+      "facts": "① F.A.C.T.S",
+      "valuation": "② 估值輸入"
+    },
+    "facts": {
+      "emptyOption": "— 未評估 —",
+      "yes": "✓ 是",
+      "no": "✗ 否",
+      "positive": "✓ 正值",
+      "negative": "✗ 負值",
+      "eps": "EPS 穩定增長",
+      "fcf": "自由現金流 (FCF)",
+      "roe": "ROE > 15%",
+      "intCov": "利息覆蓋率",
+      "above10": "> 10x",
+      "above4": "> 4x",
+      "noDebt": "無負債",
+      "insufficient": "不足",
+      "moat": "護城河",
+      "twoMoats": "兩項護城河",
+      "oneMoat": "一項護城河",
+      "noMoat": "無護城河",
+      "netMargin": "淨利潤率",
+      "above20": "> 20%",
+      "above10pct": "> 10%",
+      "increasing": "持續增長",
+      "belowStandard": "不達標",
+      "hasDividends": "派發股息",
+      "policy": "股東友善政策",
+      "techRisk": "科技顛覆風險",
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "mgmtRisk": "管理層風險"
+    }
+  },
+  "stockSearch": {
+    "placeholder": "輸入股票代號或公司名稱...",
+    "searching": "搜尋中...",
+    "add": "新增"
+  },
+  "criteriaGrid": {
+    "title": "F.A.C.T.S 評估標準",
+    "notAssessed": "未評估",
+    "yes": "是",
+    "no": "否",
+    "positive": "正值",
+    "negative": "負值",
+    "above10": "> 10x",
+    "above4": "> 4x",
+    "noDebt": "無負債",
+    "insufficient": "不足",
+    "twoMoats": "兩項護城河",
+    "oneMoat": "一項護城河",
+    "noMoat": "無護城河",
+    "above20": "> 20%",
+    "above10pct": "> 10%",
+    "increasing": "持續增長",
+    "belowStandard": "不達標",
+    "low": "低",
+    "medium": "中",
+    "high": "高"
+  },
+  "valuationCard": {
+    "title": "估值摘要",
+    "currentPrice": "現在股價",
+    "fairValue": "合理買入價 (Fair Value)",
+    "reviewValue": "重新估值 (Review)",
+    "score": "F.A.C.T.S 信心分數",
+    "notes": "備註",
+    "fairValueShort": "合理買入價",
+    "reviewValueShort": "重新估值"
+  },
+  "financials": {
+    "unavailable": "財務數據無法取得",
+    "keyMetrics": {
+      "title": "關鍵指標",
+      "valuation": "估值指標",
+      "profitability": "獲利能力",
+      "financialHealth": "財務健康",
+      "dividends": "股息",
+      "pe": "P/E (本益比)",
+      "pb": "P/B (市帳率)",
+      "ps": "P/S (市銷率)",
+      "evEbitda": "EV/EBITDA",
+      "roe": "ROE",
+      "roa": "ROA",
+      "grossMargin": "毛利率",
+      "operatingMargin": "營業利潤率",
+      "netMargin": "淨利潤率",
+      "debtToEquity": "負債權益比",
+      "currentRatio": "流動比率",
+      "eps": "EPS",
+      "bookValue": "每股帳面價值",
+      "dividendYield": "股息殖利率",
+      "payoutRatio": "配息率"
+    },
+    "companyHeader": {
+      "marketCap": "市值",
+      "pe": "P/E 本益比",
+      "beta": "Beta",
+      "employees": "員工人數"
+    },
+    "charts": {
+      "revenue": "年度營收 vs 淨利",
+      "eps": "每股盈利 (EPS)",
+      "fcf": "自由現金流 (FCF)",
+      "margins": "利潤率趨勢",
+      "grossMargin": "毛利率",
+      "operatingMargin": "營業利潤率",
+      "netMargin": "淨利潤率",
+      "dividendHistory": "股息歷史",
+      "dividendGrowth": "股息增長趨勢",
+      "annualDividend": "年化股息",
+      "yoyGrowth": "同比增長率",
+      "priceChart": "價格走勢",
+      "fairValue": "合理買入價",
+      "reviewValue": "重新估值"
+    },
+    "dividendHistory": {
+      "title": "股息歷史",
+      "noRecords": "{ticker} 沒有股息紀錄",
+      "consecutiveYears": "連續配息年數",
+      "frequency": "配息頻率",
+      "monthly": "月配息",
+      "quarterly": "季配息",
+      "semiAnnual": "半年配息",
+      "annual": "年配息",
+      "irregular": "不定期",
+      "cagr3": "3年CAGR",
+      "cagr5": "5年CAGR",
+      "year": "年份",
+      "annualDividend": "年化股息",
+      "count": "次數"
+    }
+  }
+}

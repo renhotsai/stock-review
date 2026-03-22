@@ -4,6 +4,7 @@ import type { Stock } from '@/lib/db';
 import { calculateValuation, getPriceStatus } from '@/lib/valuation';
 import PriceStatusBadge from './PriceStatusBadge';
 import ScoreBadge from './ScoreBadge';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface ValuationCardProps {
   stock: Stock;
@@ -18,6 +19,7 @@ const priceColorMap = {
 };
 
 export default function ValuationCard({ stock, currentPrice }: ValuationCardProps) {
+  const { t } = useTranslation();
   const { fairValue, reviewValue, score } = calculateValuation(stock);
   const status = getPriceStatus(currentPrice, fairValue, reviewValue);
   const priceColor = priceColorMap[status];
@@ -42,10 +44,10 @@ export default function ValuationCard({ stock, currentPrice }: ValuationCardProp
   }
 
   const rows = [
-    { label: '現在股價', value: currentPrice != null ? `$${currentPrice.toFixed(2)}` : '—', highlight: true },
-    { label: '合理買入價 (Fair Value)', value: fairValue != null ? `$${fairValue.toFixed(2)}` : '—' },
-    { label: '重新估值 (Review)', value: reviewValue != null ? `$${reviewValue.toFixed(2)}` : '—' },
-    { label: 'F.A.C.T.S 信心分數', value: <ScoreBadge score={score} size="sm" /> },
+    { label: t('valuationCard.currentPrice'), value: currentPrice != null ? `$${currentPrice.toFixed(2)}` : '—', highlight: true },
+    { label: t('valuationCard.fairValue'), value: fairValue != null ? `$${fairValue.toFixed(2)}` : '—' },
+    { label: t('valuationCard.reviewValue'), value: reviewValue != null ? `$${reviewValue.toFixed(2)}` : '—' },
+    { label: t('valuationCard.score'), value: <ScoreBadge score={score} size="sm" /> },
   ];
 
   const typeLabel =
@@ -57,7 +59,7 @@ export default function ValuationCard({ stock, currentPrice }: ValuationCardProp
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">估值摘要</h3>
+          <h3 className="text-lg font-bold text-gray-900">{t('valuationCard.title')}</h3>
           <p className="text-xs text-gray-500 mt-0.5">{stock.type} — {typeLabel}</p>
         </div>
         <PriceStatusBadge status={status} />
@@ -79,10 +81,10 @@ export default function ValuationCard({ stock, currentPrice }: ValuationCardProp
           <div className="flex justify-between text-xs text-gray-400">
             <span className="flex items-center gap-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400" />
-              合理買入價 {fairValue != null ? `$${fairValue.toFixed(2)}` : ''}
+              {t('valuationCard.fairValueShort')} {fairValue != null ? `$${fairValue.toFixed(2)}` : ''}
             </span>
             <span className="flex items-center gap-1">
-              重新估值 {reviewValue != null ? `$${reviewValue.toFixed(2)}` : ''}
+              {t('valuationCard.reviewValueShort')} {reviewValue != null ? `$${reviewValue.toFixed(2)}` : ''}
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400" />
             </span>
           </div>
@@ -102,7 +104,7 @@ export default function ValuationCard({ stock, currentPrice }: ValuationCardProp
 
       {stock.notes && (
         <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs text-gray-500 font-medium mb-1">備註</p>
+          <p className="text-xs text-gray-500 font-medium mb-1">{t('valuationCard.notes')}</p>
           <p className="text-sm text-gray-700">{stock.notes}</p>
         </div>
       )}

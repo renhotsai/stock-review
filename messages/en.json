@@ -1,0 +1,302 @@
+{
+  "nav": {
+    "addStock": "+ Add Stock",
+    "logout": "Logout",
+    "login": "Login"
+  },
+  "dashboard": {
+    "title": "Stock Watchlist",
+    "subtitle": "Tracking {count} US stocks · Price updates every 20 min",
+    "highScore": "{count} high confidence scores (≥ 7.5)",
+    "addStock": "+ Add Stock",
+    "errorTitle": "⚠ An error occurred",
+    "priceRangeLabel": "Price zones:",
+    "buyZone": "Buy Zone",
+    "buyZoneDesc": "· Current ≤ Fair Entry",
+    "fairZone": "Fair Zone",
+    "fairZoneDesc": "· Fair Entry < Current ≤ Review",
+    "overvalued": "Overvalued",
+    "overvaluedDesc": "· Current > Review Price",
+    "disclaimer": "Price data from Yahoo Finance, may have 15-min delay. Prices auto-update every 20 min."
+  },
+  "common": {
+    "loading": "Loading...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "back": "← Back",
+    "home": "Home",
+    "details": "Details",
+    "saving": "Saving...",
+    "error": "⚠ Error",
+    "noData": "—",
+    "addStock": "+ Add Stock",
+    "lookup": "Lookup"
+  },
+  "tabs": {
+    "valuation": "Valuation",
+    "profile": "Company Profile",
+    "financials": "Financials",
+    "dividends": "Dividend History",
+    "price": "Price Chart"
+  },
+  "stockTable": {
+    "empty": "No stocks yet. Add your first stock.",
+    "addFirst": "Add First Stock",
+    "symbol": "Symbol",
+    "name": "Name",
+    "type": "Type",
+    "score": "Score",
+    "currentPrice": "Current Price",
+    "fairValue": "Fair Entry",
+    "reviewValue": "Review Price",
+    "status": "Status",
+    "actions": "Actions",
+    "deleteConfirm": "Delete {symbol}?"
+  },
+  "stockRow": {
+    "loading": "Loading...",
+    "details": "Details",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "…"
+  },
+  "priceStatus": {
+    "undervalued": "Buy Zone",
+    "fair": "Fair Zone",
+    "overvalued": "Overvalued",
+    "unknown": "—"
+  },
+  "stockDetail": {
+    "home": "Home",
+    "edit": "Edit",
+    "back": "← Back",
+    "autoUpdate": "Auto-updates every 20 min",
+    "currentPrice": "Current Price",
+    "unavailable": "Financial data unavailable"
+  },
+  "newStockPage": {
+    "title": "Add Stock",
+    "subtitle": "Add a US stock to your watchlist"
+  },
+  "editPage": {
+    "title": "Edit Stock — {symbol}",
+    "subtitle": "Update F.A.C.T.S assessment and valuation"
+  },
+  "lookupPage": {
+    "home": "Home",
+    "lookup": "Lookup",
+    "addStock": "+ Add Stock"
+  },
+  "auth": {
+    "signin": {
+      "title": "Sign In",
+      "email": "Email",
+      "password": "Password",
+      "invalidCredentials": "Invalid email or password",
+      "signingIn": "Signing in...",
+      "submit": "Sign In",
+      "noAccount": "Don't have an account?",
+      "register": "Sign up"
+    },
+    "register": {
+      "title": "Create Account",
+      "name": "Name (optional)",
+      "namePlaceholder": "Your name",
+      "email": "Email",
+      "password": "Password",
+      "passwordPlaceholder": "At least 6 characters",
+      "failed": "Registration failed",
+      "error": "An error occurred. Please try again.",
+      "registering": "Registering...",
+      "submit": "Create Account",
+      "hasAccount": "Already have an account?",
+      "signin": "Sign in"
+    }
+  },
+  "stockForm": {
+    "step1": {
+      "title": "Enter Stock Symbol",
+      "subtitle": "AI will automatically query all financial data",
+      "analyzeButton": "AI Analysis →",
+      "queryFailed": "Query failed, please try again",
+      "loadFailed": "Load failed, please try again",
+      "processing": "AI is querying financial data and analyzing...",
+      "processingNote": "This may take 15–30 seconds"
+    },
+    "step2": {
+      "title": "F.A.C.T.S Assessment",
+      "highConfidence": "✓ High Confidence",
+      "mediumConfidence": "~ Medium Confidence",
+      "lowConfidence": "⚠ Low Confidence",
+      "priceUnavailable": "Price unavailable",
+      "aiPrice": "📈 AI queried price: {currency} {price} ({date})",
+      "lowConfidenceWarning": "⚠ Data may be >12 months old, verify manually",
+      "stalePrice": "⚠ Price not updated for {days} days, consider re-analyzing",
+      "stockType": "Stock Type",
+      "typeEffect": "Affects valuation method",
+      "growthStock": "Growth Stock",
+      "dividendStock": "Dividend Stock",
+      "assetStock": "Asset Stock",
+      "requery": "← Re-query",
+      "next": "Next →"
+    },
+    "step3": {
+      "title": "Valuation Inputs",
+      "eps": "EPS (Earnings per Share)",
+      "growthRate": "Growth Multiplier",
+      "annualDividend": "Annual Dividend",
+      "returnRate": "Target Return Rate",
+      "returnRateHint": "Default 4% = 0.04",
+      "bvps": "Book Value per Share (BVPS)",
+      "discountFactor": "Discount Factor",
+      "discountFactorHint": "Default 0.8 (80%)",
+      "notes": "Notes",
+      "notesPlaceholder": "Investment rationale, risk notes...",
+      "previewTitle": "Valuation Preview",
+      "confidenceScore": "Confidence Score",
+      "fairValue": "Fair Entry Price",
+      "reviewValue": "Review Price",
+      "back": "← Back",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "addStock": "Add Stock",
+      "updateStock": "Update Stock"
+    },
+    "stepIndicator": {
+      "facts": "① F.A.C.T.S",
+      "valuation": "② Valuation"
+    },
+    "facts": {
+      "emptyOption": "— Not Assessed —",
+      "yes": "✓ Yes",
+      "no": "✗ No",
+      "positive": "✓ Positive",
+      "negative": "✗ Negative",
+      "eps": "Stable EPS Growth",
+      "fcf": "Free Cash Flow (FCF)",
+      "roe": "ROE > 15%",
+      "intCov": "Interest Coverage",
+      "above10": "> 10x",
+      "above4": "> 4x",
+      "noDebt": "No Debt",
+      "insufficient": "Insufficient",
+      "moat": "Moat",
+      "twoMoats": "Two Moats",
+      "oneMoat": "One Moat",
+      "noMoat": "No Moat",
+      "netMargin": "Net Margin",
+      "above20": "> 20%",
+      "above10pct": "> 10%",
+      "increasing": "Increasing",
+      "belowStandard": "Below Standard",
+      "hasDividends": "Pays Dividends",
+      "policy": "Shareholder-Friendly Policy",
+      "techRisk": "Tech Disruption Risk",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "mgmtRisk": "Management Risk"
+    }
+  },
+  "stockSearch": {
+    "placeholder": "Enter ticker or company name...",
+    "searching": "Searching...",
+    "add": "Add"
+  },
+  "criteriaGrid": {
+    "title": "F.A.C.T.S Assessment",
+    "notAssessed": "Not Assessed",
+    "yes": "Yes",
+    "no": "No",
+    "positive": "Positive",
+    "negative": "Negative",
+    "above10": "> 10x",
+    "above4": "> 4x",
+    "noDebt": "No Debt",
+    "insufficient": "Insufficient",
+    "twoMoats": "Two Moats",
+    "oneMoat": "One Moat",
+    "noMoat": "No Moat",
+    "above20": "> 20%",
+    "above10pct": "> 10%",
+    "increasing": "Increasing",
+    "belowStandard": "Below Standard",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "valuationCard": {
+    "title": "Valuation Summary",
+    "currentPrice": "Current Price",
+    "fairValue": "Fair Entry Price (Fair Value)",
+    "reviewValue": "Review Price (Review)",
+    "score": "F.A.C.T.S Confidence Score",
+    "notes": "Notes",
+    "fairValueShort": "Fair Entry",
+    "reviewValueShort": "Review Price"
+  },
+  "financials": {
+    "unavailable": "Financial data unavailable",
+    "keyMetrics": {
+      "title": "Key Metrics",
+      "valuation": "Valuation",
+      "profitability": "Profitability",
+      "financialHealth": "Financial Health",
+      "dividends": "Dividends",
+      "pe": "P/E Ratio",
+      "pb": "P/B Ratio",
+      "ps": "P/S Ratio",
+      "evEbitda": "EV/EBITDA",
+      "roe": "ROE",
+      "roa": "ROA",
+      "grossMargin": "Gross Margin",
+      "operatingMargin": "Operating Margin",
+      "netMargin": "Net Margin",
+      "debtToEquity": "Debt/Equity",
+      "currentRatio": "Current Ratio",
+      "eps": "EPS",
+      "bookValue": "Book Value/Share",
+      "dividendYield": "Dividend Yield",
+      "payoutRatio": "Payout Ratio"
+    },
+    "companyHeader": {
+      "marketCap": "Market Cap",
+      "pe": "P/E Ratio",
+      "beta": "Beta",
+      "employees": "Employees"
+    },
+    "charts": {
+      "revenue": "Annual Revenue vs Net Income",
+      "eps": "Earnings per Share (EPS)",
+      "fcf": "Free Cash Flow (FCF)",
+      "margins": "Profit Margin Trends",
+      "grossMargin": "Gross Margin",
+      "operatingMargin": "Operating Margin",
+      "netMargin": "Net Margin",
+      "dividendHistory": "Dividend History",
+      "dividendGrowth": "Dividend Growth Trend",
+      "annualDividend": "Annual Dividend",
+      "yoyGrowth": "YoY Growth Rate",
+      "priceChart": "Price Chart",
+      "fairValue": "Fair Entry",
+      "reviewValue": "Review Price"
+    },
+    "dividendHistory": {
+      "title": "Dividend History",
+      "noRecords": "{ticker} has no dividend records",
+      "consecutiveYears": "Consecutive Years",
+      "frequency": "Frequency",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "semiAnnual": "Semi-Annual",
+      "annual": "Annual",
+      "irregular": "Irregular",
+      "cagr3": "3Y CAGR",
+      "cagr5": "5Y CAGR",
+      "year": "Year",
+      "annualDividend": "Annual Dividend",
+      "count": "Count"
+    }
+  }
+}

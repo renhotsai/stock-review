@@ -2,6 +2,7 @@ import { sql } from '@/lib/db';
 import type { Stock } from '@/lib/db';
 import StockForm from '@/components/StockForm';
 import { notFound } from 'next/navigation';
+import EditStockHeader from '@/components/EditStockHeader';
 
 export default async function EditStockPage({ params }: { params: { id: string } }) {
   const id = parseInt(params.id);
@@ -39,10 +40,7 @@ export default async function EditStockPage({ params }: { params: { id: string }
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">編輯股票 — {stock.symbol}</h1>
-        <p className="text-sm text-gray-500 mt-1">更新 F.A.C.T.S 評估和估值資訊</p>
-      </div>
+      <EditStockHeader symbol={stock.symbol} />
       <StockForm mode="edit" initialData={initialData} />
     </div>
   );

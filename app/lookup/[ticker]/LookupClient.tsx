@@ -14,15 +14,9 @@ import DividendHistoryTable from '@/components/financials/DividendHistoryTable';
 import DividendGrowthChart from '@/components/financials/DividendGrowthChart';
 import FinancialsLoadingSkeleton from '@/components/financials/FinancialsLoadingSkeleton';
 import PriceChart from '@/components/charts/PriceChart';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 type Tab = 'profile' | 'financials' | 'dividends' | 'price';
-
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'profile', label: '公司資料' },
-  { key: 'financials', label: '財務報表' },
-  { key: 'dividends', label: '股息歷史' },
-  { key: 'price', label: '價格走勢' },
-];
 
 interface LookupClientProps {
   ticker: string;
@@ -30,6 +24,14 @@ interface LookupClientProps {
 
 export default function LookupClient({ ticker }: LookupClientProps) {
   const [tab, setTab] = useState<Tab>('profile');
+  const { t } = useTranslation();
+
+  const TABS: { key: Tab; label: string }[] = [
+    { key: 'profile', label: t('tabs.profile') },
+    { key: 'financials', label: t('tabs.financials') },
+    { key: 'dividends', label: t('tabs.dividends') },
+    { key: 'price', label: t('tabs.price') },
+  ];
 
   const { data: priceData } = useStockPrice(ticker);
   const { data: financials, isPending: finLoading } = useFinancials(
@@ -47,17 +49,17 @@ export default function LookupClient({ ticker }: LookupClientProps) {
     <div>
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-gray-200 mb-6 overflow-x-auto">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-              tab === t.key
+              tab === tabItem.key
                 ? 'border-blue-600 text-blue-700'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            {t.label}
+            {tabItem.label}
           </button>
         ))}
       </div>
@@ -94,7 +96,7 @@ export default function LookupClient({ ticker }: LookupClientProps) {
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-              <p className="text-gray-400 text-sm">財務數據無法取得</p>
+              <p className="text-gray-400 text-sm">{t('financials.unavailable')}</p>
             </div>
           )}
         </div>
