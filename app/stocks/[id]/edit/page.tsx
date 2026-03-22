@@ -39,7 +39,7 @@ export default async function EditStockPage({ params }: { params: { id: string }
   };
 
   return (
-    <div>
+    <div className="max-w-2xl mx-auto">
       <EditStockHeader symbol={stock.symbol} />
       <StockForm mode="edit" initialData={initialData} />
     </div>
