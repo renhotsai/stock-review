@@ -28,7 +28,11 @@ export async function POST(request: Request) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
         const status = subscription.status === 'active' ? 'active' : subscription.status;
-        const periodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+        // current_period_end field (present in webhook payload regardless of API version)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawSub = subscription as any;
+        const periodEndTs: number | undefined = rawSub.current_period_end ?? rawSub.billing_cycle_anchor;
+        const periodEnd = periodEndTs ? new Date(periodEndTs * 1000).toISOString() : null;
 
         await sql`
           UPDATE users
