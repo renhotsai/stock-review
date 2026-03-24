@@ -16,6 +16,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState<'subscription' | 'donation' | 'portal' | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get('subscribed') === '1') {
@@ -30,6 +31,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
       router.push('/auth/signin');
       return;
     }
+    setError(null);
     setLoading(type);
     try {
       const res = await fetch('/api/stripe/create-checkout', {
@@ -38,22 +40,31 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
         body: JSON.stringify({ type }),
       });
       const data = await res.json() as { url?: string; error?: string };
-      if (data.url) {
-        window.location.href = data.url;
+      if (!res.ok || !data.url) {
+        setError(data.error ?? 'Something went wrong. Please try again.');
+        return;
       }
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error. Please try again.');
     } finally {
       setLoading(null);
     }
   }
 
   async function handlePortal() {
+    setError(null);
     setLoading('portal');
     try {
       const res = await fetch('/api/stripe/create-portal', { method: 'POST' });
       const data = await res.json() as { url?: string; error?: string };
-      if (data.url) {
-        window.location.href = data.url;
+      if (!res.ok || !data.url) {
+        setError(data.error ?? 'Something went wrong. Please try again.');
+        return;
       }
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error. Please try again.');
     } finally {
       setLoading(null);
     }
@@ -70,6 +81,12 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
       {flash && (
         <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-6 text-green-800 text-sm font-medium">
           {flash}
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-6 text-red-700 text-sm">
+          <span className="font-medium">Error: </span>{error}
         </div>
       )}
 
@@ -135,7 +152,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
               disabled={loading === 'portal'}
               className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
-              {loading === 'portal' ? '...' : t('pricing.manageSubscription')}
+              {loading === 'portal' ? '處理中...' : t('pricing.manageSubscription')}
             </button>
           ) : (
             <button
@@ -143,7 +160,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
               disabled={loading === 'subscription'}
               className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {loading === 'subscription' ? '...' : t('pricing.upgrade')}
+              {loading === 'subscription' ? '跳轉至付款頁面...' : t('pricing.upgrade')}
             </button>
           )}
         </div>
@@ -158,7 +175,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
           disabled={loading === 'donation'}
           className="bg-pink-500 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-pink-600 transition-colors disabled:opacity-50"
         >
-          {loading === 'donation' ? '...' : t('pricing.donate')}
+          {loading === 'donation' ? '跳轉至付款頁面...' : t('pricing.donate')}
         </button>
       </div>
     </div>

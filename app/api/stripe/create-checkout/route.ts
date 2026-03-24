@@ -13,6 +13,13 @@ export async function POST(request: Request) {
     const userId = Number(session.user.id);
     const { type } = await request.json() as { type: 'subscription' | 'donation' };
 
+    if (type === 'subscription' && !process.env.STRIPE_SUBSCRIPTION_PRICE_ID) {
+      return NextResponse.json({ error: 'Subscription not configured (STRIPE_SUBSCRIPTION_PRICE_ID missing)' }, { status: 503 });
+    }
+    if (type === 'donation' && !process.env.STRIPE_DONATION_PRICE_ID) {
+      return NextResponse.json({ error: 'Donation not configured (STRIPE_DONATION_PRICE_ID missing)' }, { status: 503 });
+    }
+
     // Get or create Stripe customer
     const [user] = await sql`SELECT email, stripe_customer_id FROM users WHERE id = ${userId}`;
     let customerId = user?.stripe_customer_id as string | null;
@@ -33,12 +40,7 @@ export async function POST(request: Request) {
         customer: customerId,
         mode: 'subscription',
         currency: 'cad',
-        line_items: [
-          {
-            price: process.env.STRIPE_SUBSCRIPTION_PRICE_ID!,
-            quantity: 1,
-          },
-        ],
+        line_items: [{ price: process.env.STRIPE_SUBSCRIPTION_PRICE_ID!, quantity: 1 }],
         success_url: `${appUrl}/?subscribed=1`,
         cancel_url: `${appUrl}/pricing`,
         metadata: { userId: String(userId) },
@@ -51,12 +53,7 @@ export async function POST(request: Request) {
         customer: customerId,
         mode: 'payment',
         currency: 'cad',
-        line_items: [
-          {
-            price: process.env.STRIPE_DONATION_PRICE_ID!,
-            quantity: 1,
-          },
-        ],
+        line_items: [{ price: process.env.STRIPE_DONATION_PRICE_ID!, quantity: 1 }],
         success_url: `${appUrl}/?donated=1`,
         cancel_url: `${appUrl}/pricing`,
         metadata: { userId: String(userId) },
@@ -67,6 +64,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
   } catch (error) {
     console.error('POST /api/stripe/create-checkout error:', error);
-    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create checkout session';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
