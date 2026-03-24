@@ -26,6 +26,16 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
     }
   }, [searchParams, t]);
 
+  async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 20000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function handleCheckout(type: 'subscription' | 'donation') {
     if (!isLoggedIn) {
       router.push('/auth/signin');
@@ -34,7 +44,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
     setError(null);
     setLoading(type);
     try {
-      const res = await fetch('/api/stripe/create-checkout', {
+      const res = await fetchWithTimeout('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type }),
@@ -46,7 +56,8 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
       }
       window.location.href = data.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Network error. Please try again.';
+      setError(err instanceof Error && err.name === 'AbortError' ? '請求逾時，請稍後再試。' : msg);
     } finally {
       setLoading(null);
     }
@@ -56,7 +67,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
     setError(null);
     setLoading('portal');
     try {
-      const res = await fetch('/api/stripe/create-portal', { method: 'POST' });
+      const res = await fetchWithTimeout('/api/stripe/create-portal', { method: 'POST' });
       const data = await res.json() as { url?: string; error?: string };
       if (!res.ok || !data.url) {
         setError(data.error ?? 'Something went wrong. Please try again.');
@@ -64,7 +75,8 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
       }
       window.location.href = data.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Network error. Please try again.';
+      setError(err instanceof Error && err.name === 'AbortError' ? '請求逾時，請稍後再試。' : msg);
     } finally {
       setLoading(null);
     }
