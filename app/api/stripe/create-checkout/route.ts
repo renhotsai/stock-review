@@ -3,6 +3,14 @@ import { auth } from '@/auth';
 import { stripe } from '@/lib/stripe';
 import { sql } from '@/lib/db';
 
+function getAppUrl(request: Request): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  // Auto-detect from request headers (works on Vercel)
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? 'localhost:3000';
+  const proto = request.headers.get('x-forwarded-proto') ?? 'https';
+  return `${proto}://${host}`;
+}
+
 export async function POST(request: Request) {
   try {
     const session = await auth();
@@ -33,7 +41,7 @@ export async function POST(request: Request) {
       await sql`UPDATE users SET stripe_customer_id = ${customerId} WHERE id = ${userId}`;
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const appUrl = getAppUrl(request);
 
     if (type === 'subscription') {
       const checkoutSession = await stripe.checkout.sessions.create({
