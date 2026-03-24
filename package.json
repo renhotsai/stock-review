@@ -52,6 +52,8 @@
     "next-auth": "5.0.0-beta.30",
     "@auth/neon-adapter": "^1.11.1",
     "bcryptjs": "^3.0.3",
-    "@types/bcryptjs": "^2.4.6"
+    "@types/bcryptjs": "^2.4.6",
+    "stripe": "^20.4.1",
+    "@stripe/stripe-js": "^8.11.0"
   }
 }

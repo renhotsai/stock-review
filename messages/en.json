@@ -2,7 +2,36 @@
   "nav": {
     "addStock": "+ Add Stock",
     "logout": "Logout",
-    "login": "Login"
+    "login": "Login",
+    "upgrade": "Upgrade",
+    "donate": "Donate $1"
+  },
+  "pricing": {
+    "title": "Plans & Pricing",
+    "subtitle": "Choose the plan that's right for you",
+    "freePlan": "Free",
+    "proPlan": "Pro",
+    "freePrice": "Free",
+    "proPrice": "$10 CAD / month",
+    "freeLimit": "Up to 3 stocks",
+    "proLimit": "Up to 10 stocks",
+    "allFeatures": "All features included",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade to Pro",
+    "manageSubscription": "Manage Subscription",
+    "donateTitle": "Support This Project",
+    "donateDesc": "If you find this tool useful, consider buying us a coffee.",
+    "donate": "Donate $1 CAD",
+    "upgradePromptTitle": "Stock limit reached",
+    "upgradePromptDesc": "You've reached your {limit}-stock limit on the Free plan. Upgrade to Pro to track up to 10 stocks.",
+    "upgradeNow": "Upgrade to Pro",
+    "viewPlans": "View Plans",
+    "stockCount": "{count} / {limit} stocks",
+    "subscriptionActive": "Pro plan active",
+    "subscriptionPastDue": "Payment past due — please update billing",
+    "perMonth": "/month",
+    "successSubscribed": "You've successfully upgraded to Pro!",
+    "successDonated": "Thank you for your donation!"
   },
   "dashboard": {
     "title": "Stock Watchlist",

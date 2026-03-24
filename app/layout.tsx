@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import QueryProvider from '@/components/QueryProvider';
 import { auth, signOut } from '@/auth';
+import { sql } from '@/lib/db';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import NavActions from '@/components/NavActions';
 
@@ -17,6 +18,17 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
+
+  let subscriptionStatus = 'free';
+  if (session?.user?.id) {
+    try {
+      const userId = Number(session.user.id);
+      const [user] = await sql`SELECT subscription_status FROM users WHERE id = ${userId}`;
+      subscriptionStatus = (user?.subscription_status as string) ?? 'free';
+    } catch {
+      // ignore — default to free
+    }
+  }
 
   async function logoutAction() {
     'use server';
@@ -35,6 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <NavActions
                 userDisplay={session?.user?.name ?? session?.user?.email ?? null}
                 isLoggedIn={!!session?.user}
+                subscriptionStatus={subscriptionStatus}
                 logoutAction={logoutAction}
               />
             </nav>

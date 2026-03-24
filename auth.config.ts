@@ -12,7 +12,9 @@ export const authConfig: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const isPublic =
         nextUrl.pathname.startsWith('/auth/') ||
-        nextUrl.pathname.startsWith('/api/auth');
+        nextUrl.pathname.startsWith('/api/auth') ||
+        nextUrl.pathname === '/api/stripe/webhook' ||
+        nextUrl.pathname === '/pricing';
 
       if (isPublic) return true;
       return isLoggedIn;

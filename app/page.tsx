@@ -3,6 +3,7 @@ import type { Stock } from '@/lib/db';
 import { calculateValuation } from '@/lib/valuation';
 import { auth } from '@/auth';
 import DashboardView from '@/components/DashboardView';
+import { getStockLimit } from '@/lib/subscription-config';
 
 export const revalidate = 0;
 
@@ -28,6 +29,17 @@ export default async function DashboardPage() {
   const userId = Number(session?.user?.id);
   const { stocks, error } = await getStocks(userId);
 
+  // Get subscription status
+  let subscriptionStatus = 'free';
+  try {
+    const [user] = await sql`SELECT subscription_status FROM users WHERE id = ${userId}`;
+    subscriptionStatus = (user?.subscription_status as string) ?? 'free';
+  } catch {
+    // ignore — default to free
+  }
+
+  const stockLimit = getStockLimit(subscriptionStatus);
+
   // Pre-calculate scores from DB fields (no live price needed for counts)
   const stocksWithValuation = stocks.map((s) => {
     const { score } = calculateValuation(s);
@@ -43,6 +55,8 @@ export default async function DashboardPage() {
       error={error}
       highScoreCount={highScoreCount}
       totalCount={totalCount}
+      stockLimit={stockLimit}
+      subscriptionStatus={subscriptionStatus}
     />
   );
 }
