@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { sql } from '@/lib/db';
+import { sql, setupDatabase } from '@/lib/db';
 import PricingView from '@/components/PricingView';
 
 export const revalidate = 0;
@@ -11,12 +11,28 @@ export default async function PricingPage() {
 
   if (session?.user?.id) {
     const userId = Number(session.user.id);
-    const [user] = await sql`
-      SELECT subscription_status, stripe_customer_id
-      FROM users WHERE id = ${userId}
-    `;
-    subscriptionStatus = (user?.subscription_status as string) ?? 'free';
-    hasCustomer = !!user?.stripe_customer_id;
+    try {
+      const [user] = await sql`
+        SELECT subscription_status, stripe_customer_id
+        FROM users WHERE id = ${userId}
+      `;
+      subscriptionStatus = (user?.subscription_status as string) ?? 'free';
+      hasCustomer = !!user?.stripe_customer_id;
+    } catch {
+      // Columns may not exist yet — run migrations and retry
+      try {
+        await setupDatabase();
+        const [user] = await sql`
+          SELECT subscription_status, stripe_customer_id
+          FROM users WHERE id = ${userId}
+        `;
+        subscriptionStatus = (user?.subscription_status as string) ?? 'free';
+        hasCustomer = !!user?.stripe_customer_id;
+      } catch (err) {
+        console.error('Pricing page DB error:', err);
+        // Fall back to free tier defaults
+      }
+    }
   }
 
   return (
