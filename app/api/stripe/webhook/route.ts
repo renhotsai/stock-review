@@ -27,7 +27,13 @@ export async function POST(request: Request) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
-        const status = subscription.status === 'active' ? 'active' : subscription.status;
+
+        // If cancel_at_period_end is set, the user has cancelled but still has access until period end
+        const isCanceling = subscription.cancel_at_period_end === true;
+        const status = isCanceling
+          ? 'canceling'
+          : (subscription.status === 'active' ? 'active' : subscription.status);
+
         // current_period_end field (present in webhook payload regardless of API version)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rawSub = subscription as any;

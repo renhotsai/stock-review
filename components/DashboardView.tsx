@@ -14,12 +14,14 @@ interface DashboardViewProps {
   totalCount: number;
   stockLimit: number;
   subscriptionStatus: string;
+  periodEnd?: string | null;
 }
 
-export default function DashboardView({ stocks, error, highScoreCount, totalCount, stockLimit, subscriptionStatus }: DashboardViewProps) {
+export default function DashboardView({ stocks, error, highScoreCount, totalCount, stockLimit, subscriptionStatus, periodEnd }: DashboardViewProps) {
   const { t } = useTranslation();
   const atLimit = totalCount >= stockLimit;
-  const isPro = subscriptionStatus === 'active';
+  const isPro = subscriptionStatus === 'active' || subscriptionStatus === 'canceling';
+  const isCanceling = subscriptionStatus === 'canceling';
 
   return (
     <div>
@@ -56,6 +58,13 @@ export default function DashboardView({ stocks, error, highScoreCount, totalCoun
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
           <p className="text-sm text-red-600 font-medium">{t('dashboard.errorTitle')}</p>
           <p className="text-sm text-red-500 mt-0.5">{error}</p>
+        </div>
+      )}
+
+      {isCanceling && periodEnd && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 text-amber-700 text-sm">
+          {t('dashboard.subscriptionExpiring', { date: new Date(periodEnd).toLocaleDateString('zh-TW') })}
+          <Link href="/pricing" className="ml-2 underline font-medium">{t('pricing.reactivate')}</Link>
         </div>
       )}
 

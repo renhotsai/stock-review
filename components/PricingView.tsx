@@ -8,9 +8,10 @@ interface PricingViewProps {
   subscriptionStatus: string;
   hasCustomer: boolean;
   isLoggedIn: boolean;
+  periodEnd?: string | null;
 }
 
-function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: PricingViewProps) {
+function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn, periodEnd }: PricingViewProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -83,6 +84,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
   }
 
   const isPro = subscriptionStatus === 'active';
+  const isCanceling = subscriptionStatus === 'canceling';
   const isPastDue = subscriptionStatus === 'past_due';
 
   return (
@@ -108,13 +110,23 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
         </div>
       )}
 
+      {isCanceling && periodEnd && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-amber-800 text-sm">
+          {t('pricing.subscriptionCanceling', { date: new Date(periodEnd).toLocaleDateString('zh-TW') })}
+          {' '}
+          <button onClick={handlePortal} className="underline font-medium">
+            {t('pricing.reactivate')}
+          </button>
+        </div>
+      )}
+
       {/* Plans grid */}
       <div className="grid md:grid-cols-2 gap-6 mb-10">
         {/* Free plan */}
-        <div className={`rounded-xl border-2 p-6 ${!isPro ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+        <div className={`rounded-xl border-2 p-6 ${!isPro && !isCanceling ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white'}`}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900">{t('pricing.freePlan')}</h2>
-            {!isPro && (
+            {!isPro && !isCanceling && (
               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
                 {t('pricing.currentPlan')}
               </span>
@@ -134,12 +146,14 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
         </div>
 
         {/* Pro plan */}
-        <div className={`rounded-xl border-2 p-6 ${isPro ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+        <div className={`rounded-xl border-2 p-6 ${isPro || isCanceling ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white'}`}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900">{t('pricing.proPlan')}</h2>
-            {isPro && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-                {t('pricing.currentPlan')}
+            {(isPro || isCanceling) && (
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                isCanceling ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+              }`}>
+                {isCanceling ? t('pricing.cancelingPlan') : t('pricing.currentPlan')}
               </span>
             )}
           </div>
@@ -158,7 +172,7 @@ function PricingContent({ subscriptionStatus, hasCustomer, isLoggedIn }: Pricing
             </li>
           </ul>
 
-          {isPro || isPastDue ? (
+          {isPro || isCanceling || isPastDue ? (
             <button
               onClick={handlePortal}
               disabled={loading === 'portal'}
@@ -201,3 +215,4 @@ export default function PricingView(props: PricingViewProps) {
     </Suspense>
   );
 }
+
