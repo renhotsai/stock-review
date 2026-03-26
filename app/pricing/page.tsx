@@ -8,26 +8,29 @@ export default async function PricingPage() {
   const session = await auth();
   let subscriptionStatus = 'free';
   let hasCustomer = false;
+  let periodEnd: string | null = null;
 
   if (session?.user?.id) {
     const userId = Number(session.user.id);
     try {
       const [user] = await sql`
-        SELECT subscription_status, stripe_customer_id
+        SELECT subscription_status, stripe_customer_id, subscription_period_end
         FROM users WHERE id = ${userId}
       `;
       subscriptionStatus = (user?.subscription_status as string) ?? 'free';
       hasCustomer = !!user?.stripe_customer_id;
+      periodEnd = (user?.subscription_period_end as string) ?? null;
     } catch {
       // Columns may not exist yet — run migrations and retry
       try {
         await setupDatabase();
         const [user] = await sql`
-          SELECT subscription_status, stripe_customer_id
+          SELECT subscription_status, stripe_customer_id, subscription_period_end
           FROM users WHERE id = ${userId}
         `;
         subscriptionStatus = (user?.subscription_status as string) ?? 'free';
         hasCustomer = !!user?.stripe_customer_id;
+        periodEnd = (user?.subscription_period_end as string) ?? null;
       } catch (err) {
         console.error('Pricing page DB error:', err);
         // Fall back to free tier defaults
@@ -40,6 +43,7 @@ export default async function PricingPage() {
       subscriptionStatus={subscriptionStatus}
       hasCustomer={hasCustomer}
       isLoggedIn={!!session?.user?.id}
+      periodEnd={periodEnd}
     />
   );
 }

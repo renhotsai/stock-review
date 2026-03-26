@@ -31,9 +31,11 @@ export default async function DashboardPage() {
 
   // Get subscription status
   let subscriptionStatus = 'free';
+  let periodEnd: string | null = null;
   try {
-    const [user] = await sql`SELECT subscription_status FROM users WHERE id = ${userId}`;
+    const [user] = await sql`SELECT subscription_status, subscription_period_end FROM users WHERE id = ${userId}`;
     subscriptionStatus = (user?.subscription_status as string) ?? 'free';
+    periodEnd = (user?.subscription_period_end as string) ?? null;
   } catch {
     // ignore — default to free
   }
@@ -57,6 +59,7 @@ export default async function DashboardPage() {
       totalCount={totalCount}
       stockLimit={stockLimit}
       subscriptionStatus={subscriptionStatus}
+      periodEnd={periodEnd}
     />
   );
 }

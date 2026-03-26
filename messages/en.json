@@ -29,6 +29,9 @@
     "stockCount": "{count} / {limit} stocks",
     "subscriptionActive": "Pro plan active",
     "subscriptionPastDue": "Payment past due — please update billing",
+    "subscriptionCanceling": "Your subscription will end on {date}. You can still use Pro features until then.",
+    "cancelingPlan": "Expiring",
+    "reactivate": "Reactivate",
     "perMonth": "/month",
     "successSubscribed": "You've successfully upgraded to Pro!",
     "successDonated": "Thank you for your donation!"
@@ -39,6 +42,7 @@
     "highScore": "{count} high confidence scores (≥ 7.5)",
     "addStock": "+ Add Stock",
     "errorTitle": "⚠ An error occurred",
+    "subscriptionExpiring": "Your Pro subscription expires on {date}.",
     "priceRangeLabel": "Price zones:",
     "buyZone": "Buy Zone",
     "buyZoneDesc": "· Current ≤ Fair Entry",
